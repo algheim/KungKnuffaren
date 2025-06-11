@@ -68,6 +68,34 @@ PieceType board_get_piece(int index, Board* board) {
     return -1;
 }
 
+
+bool board_get_piece_color(int index, Board* board) {
+    return board->bit_boards[WHITE_PIECES] & (1ULL << index);
+}
+
+
+PieceType get_white_piece_type(Board* board, int index) {
+    if (board->bit_boards[WHITE_PAWN] & 1ULL << index) return WHITE_PAWN;
+    if (board->bit_boards[WHITE_KNIGHT] & 1ULL << index) return WHITE_KNIGHT;
+    if (board->bit_boards[WHITE_BISHOP] & 1ULL << index) return WHITE_BISHOP;
+    if (board->bit_boards[WHITE_ROOK] & 1ULL << index) return WHITE_ROOK;
+    if (board->bit_boards[WHITE_QUEEN] & 1ULL << index) return WHITE_QUEEN;
+    if (board->bit_boards[WHITE_KING] & 1ULL << index) return WHITE_KING;
+    return -1;
+}
+
+
+PieceType get_black_piece_type(Board* board, int index) {
+    if (board->bit_boards[BLACK_PAWN] & 1ULL << index) return BLACK_PAWN;
+    if (board->bit_boards[BLACK_KNIGHT] & 1ULL << index) return BLACK_KNIGHT;
+    if (board->bit_boards[BLACK_BISHOP] & 1ULL << index) return BLACK_BISHOP;
+    if (board->bit_boards[BLACK_ROOK] & 1ULL << index) return BLACK_ROOK;
+    if (board->bit_boards[BLACK_QUEEN] & 1ULL << index) return BLACK_QUEEN;
+    if (board->bit_boards[BLACK_KING] & 1ULL << index) return BLACK_KING;
+    return -1;
+}
+
+
 void board_set_piece(int index, PieceType type, Board* board) {
     board->bit_boards[type] |= (1ULL << index);
 

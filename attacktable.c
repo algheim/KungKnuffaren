@@ -13,6 +13,8 @@ uint64_t get_black_pawn_board(int x, int y);
 uint64_t get_white_pawn_attack_board(int x, int y);
 uint64_t get_black_pawn_attack_board(int x, int y);
 
+uint64_t set_square_dir_table(AttackTable* attack_table)
+
 /* --------------------- External functions ---------------------*/
 
 AttackTable* attack_table_create() {
@@ -32,6 +34,8 @@ AttackTable* attack_table_create() {
         attack_table->white_pawn_attack_table[i] = get_white_pawn_attack_board(x, y);
         attack_table->black_pawn_attack_table[i] = get_black_pawn_attack_board(x, y);
     }
+
+    set_square_dir_table(attack_table);
 
     return attack_table;
 }
@@ -249,3 +253,86 @@ uint64_t get_black_pawn_attack_board(int x, int y) {
 
     return black_pawn_attack_board;
 }
+
+
+uint64_t set_square_dir_table(AttackTable* attack_table) {
+    for (int i = 0 ; i < 64 ; i++) {
+        int x = i % 8;
+        int y = i / 8;
+        
+        uint64_t up_board = 0;
+        uint64_t up_right_board= 0;
+        uint64_t right_board = 0;
+        uint64_t down_right_board = 0;
+        uint64_t down_board = 0;
+        uint64_t down_left_board = 0;
+        uint64_t left_board = 0;
+        uint64_t up_left_board = 0;
+    
+        // Up
+        for (int i = y - 1 ; i >= 0 ; i--) {
+            up_board |= set_bit(up_board, x, i);
+        }
+
+        // Right
+        for (int i = x + 1 ; i < 8 ; i++) {
+            right_board = set_bit(right_board, i, y);
+        }
+
+        // Down
+        for (int i = y + 1 ; i < 8 ; i++) {
+            down_board = set_bit(down_board, x, i);
+        }
+
+        // Left
+        for (int i = x - 1 ; i >= 0 ; i--) {
+            left_board = set_bit(left_board, i, y);
+        }
+
+        // Up Right
+        int temp_x = x + 1;
+        int temp_y = y - 1;
+        while ((temp_x < 8) && (temp_y >= 0)) {
+            up_right_board = set_bit(up_right_board, temp_x, temp_y);
+            temp_x++;
+            temp_y--;
+        }
+
+        // Up Left
+        temp_x = x - 1;
+        temp_y = y - 1;
+        while ((temp_x >= 0) && (temp_y >= 0)) {
+            up_left_board = set_bit(up_left_board, temp_x, temp_y);
+            temp_x--;
+            temp_y--;
+        }
+
+        // Down Right
+        temp_x = x + 1;
+        temp_y = y + 1;
+        while ((temp_x < 8) && (temp_y < 8)) {
+            down_right_board = set_bit(down_right_board, temp_x, temp_y);
+            temp_x++;
+            temp_y++;
+        }
+
+        // Down Left
+        temp_x = x - 1;
+        temp_y = y + 1;
+        while ((temp_x >= 0) && (temp_y < 8)) {
+            down_left_board = set_bit(down_left_board, temp_x, temp_y);
+            temp_x--;
+            temp_y++;
+        }
+
+        attack_table->ray_dir_table[i][UP] = up_board;
+        attack_table->ray_dir_table[i][UP_RIGHT] = up_right_board;
+        attack_table->ray_dir_table[i][RIGHT] = right_board;
+        attack_table->ray_dir_table[i][DOWN_RIGHT] = down_right_board;
+        attack_table->ray_dir_table[i][DOWN] = down_board;
+        attack_table->ray_dir_table[i][DOWN_LEFT] = down_left_board;
+        attack_table->ray_dir_table[i][LEFT] = left_board;
+        attack_table->ray_dir_table[i][UP_LEFT] = up_left_board;
+    }
+}
+
