@@ -13,7 +13,7 @@ uint64_t get_black_pawn_board(int x, int y);
 uint64_t get_white_pawn_attack_board(int x, int y);
 uint64_t get_black_pawn_attack_board(int x, int y);
 
-uint64_t set_square_dir_table(AttackTable* attack_table)
+uint64_t set_square_dir_table(AttackTable* attack_table);
 
 /* --------------------- External functions ---------------------*/
 
@@ -39,6 +39,40 @@ AttackTable* attack_table_create() {
 
     return attack_table;
 }
+
+uint64_t attack_table_get_board(int index, PieceType piece_type, AttackTable* attack_table) {
+    switch (piece_type) {
+        case WHITE_KING:
+        case BLACK_KING:
+            return attack_table->king_table[index];
+
+        case WHITE_QUEEN:
+        case BLACK_QUEEN:
+            return attack_table->queen_table[index];
+
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            return attack_table->rook_table[index];
+
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            return attack_table->bishop_table[index];
+
+        case WHITE_KNIGHT:
+        case BLACK_KNIGHT:
+            return attack_table->knight_table[index];
+
+        case WHITE_PAWN:
+            return attack_table->white_pawn_attack_table[index];
+
+        case BLACK_PAWN:
+            return attack_table->black_pawn_attack_table[index];
+
+        default:
+            return 0ULL;
+    }
+}
+
 
 /**
  * @brief Prints the given bit board as an 8x8 square with coordinate 0,0 

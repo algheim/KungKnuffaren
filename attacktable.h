@@ -43,6 +43,9 @@ typedef struct attack_table {
 
 AttackTable* attack_table_create();
 
+// Gets the attacks. For pawns, this means just the diagonal moves.
+uint64_t attack_table_get_board(int index, PieceType piece_type, AttackTable* attack_table);
+
 void attack_table_print(uint64_t bit_board);
 
 void attack_table_destroy(AttackTable* attack_table);
