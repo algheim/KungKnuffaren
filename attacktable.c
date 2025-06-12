@@ -13,7 +13,7 @@ uint64_t get_black_pawn_board(int x, int y);
 uint64_t get_white_pawn_attack_board(int x, int y);
 uint64_t get_black_pawn_attack_board(int x, int y);
 
-uint64_t set_square_dir_table(AttackTable* attack_table);
+void set_square_dir_table(AttackTable* attack_table);
 
 /* --------------------- External functions ---------------------*/
 
@@ -289,7 +289,7 @@ uint64_t get_black_pawn_attack_board(int x, int y) {
 }
 
 
-uint64_t set_square_dir_table(AttackTable* attack_table) {
+void set_square_dir_table(AttackTable* attack_table) {
     for (int i = 0 ; i < 64 ; i++) {
         int x = i % 8;
         int y = i / 8;

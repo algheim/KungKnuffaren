@@ -2,29 +2,31 @@
 #include "bitboard.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
+
+int min(int n1, int n2);
 
 uint64_t bit_board_from_to(int from, int to) {
     int from_x = from % 8;
     int from_y = from / 8;
     int to_x = to % 8;
     int to_y = to / 8;
-    uint64_t return_board = 0ULL;
 
     if (to_x == from_x) {
         if (to_y > from_y) {
-            return bit_board_ray_up(from, to_y - from_y); 
+            return bit_board_up_ray(from, to_y - from_y); 
         }
         else if (to_y < from_y) {
-            return bit_board_ray_down(from, from_y - to_y);
+            return bit_board_down_ray(from, from_y - to_y);
         }
     }
 
     if (to_y == from_y) {
         if (to_x > from_x) {
-            return bit_board_ray_right(from, to_x - from_x);
+            return bit_board_right_ray(from, to_x - from_x);
         }
         else if (to_x < from_x) {
-            return bit_board_ray_left(from, from_x - to_x);
+            return bit_board_left_ray(from, from_x - to_x);
         }
     }
 
@@ -54,25 +56,24 @@ uint64_t bit_board_get_line(int from, int to) {
     int from_y = from / 8;
     int to_x = to % 8;
     int to_y = to / 8;
-    uint64_t return_board = 0ULL;
 
     if (to_x == from_x) {
         if (to_y > from_y) {
             int distance = 7 - from_y;
-            return bit_board_ray_up(from, distance); 
+            return bit_board_up_ray(from, distance); 
         } else if (to_y < from_y) {
             int distance = from_y;
-            return bit_board_ray_down(from, distance);
+            return bit_board_down_ray(from, distance);
         }
     }
 
     if (to_y == from_y) {
         if (to_x > from_x) {
             int distance = 7 - from_x;
-            return bit_board_ray_right(from, distance);
+            return bit_board_right_ray(from, distance);
         } else if (to_x < from_x) {
             int distance = from_x;
-            return bit_board_ray_left(from, distance);
+            return bit_board_left_ray(from, distance);
         }
     }
 
@@ -80,19 +81,19 @@ uint64_t bit_board_get_line(int from, int to) {
     if (abs(to_x - from_x) == abs(to_y - from_y)) {
         int distance;
         if (to_x > from_x && to_y > from_y) {
-            distance = MIN(7 - from_x, 7 - from_y);
+            distance = min(7 - from_x, 7 - from_y);
             return bit_board_up_right_ray(from, distance);
         } 
         else if (to_x < from_x && to_y > from_y) {
-            distance = MIN(from_x, 7 - from_y);
+            distance = min(from_x, 7 - from_y);
             return bit_board_up_left_ray(from, distance);
         } 
         else if (to_x > from_x && to_y < from_y) {
-            distance = MIN(7 - from_x, from_y);
+            distance = min(7 - from_x, from_y);
             return bit_board_down_right_ray(from, distance);
         } 
         else if (to_x < from_x && to_y < from_y) {
-            distance = MIN(from_x, from_y);
+            distance = min(from_x, from_y);
             return bit_board_down_left_ray(from, distance);
         }
     }
@@ -178,4 +179,11 @@ uint64_t bit_board_down_left_ray(int from, int count) {
         current_index -= 9;
     }
     return board;
+}
+
+int min(int n1, int n2) {
+    if (n1 <= n2) {
+        return n1;
+    }
+    return n2;
 }

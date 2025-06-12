@@ -29,18 +29,29 @@ uint64_t get_pinned_pieces(Board* board, int king_index, AttackTable* attack_tab
 uint64_t get_pinned_msb(uint64_t pieces, Board* board);
 uint64_t get_pinned_lsb(uint64_t pieces, Board* board);
 
+uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* attack_table);
+uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_table, uint64_t* all_attacks);
+void get_moves_from_index(int from_index, uint64_t attacks, Move* moves, int* current_index, Board* board);
+void get_moves_from_bit_board(Board* board, 
+                              Move* moves, 
+                              int* current_index, 
+                              AttackTable* attack_table, 
+                              uint64_t pinned_pieces,
+                              uint64_t squares_blocking_king,
+                              int king_index);
+
 /* -------------------------- External functions ----------------------------*/
 
 Move* get_legal_moves(Board* board, AttackTable* attack_table) {
     Move* legal_moves = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
     int current_move_index = 0;
     uint64_t attacked_squares;
-    int king_index;
+    int king_index = __builtin_ctzll(board->bit_boards[WHITE_KING]);
     // We assume the king doesn't have to be blocked, so all squares 'blocks' the king.
     uint64_t squares_blocking_king = -0ULL;
 
     uint64_t friendly_pieces= board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];
-    uint64_t enemy_pieces = board->turn ? board->bit_boards[BLACK_PIECES] : board->bit_boards[WHITE_PIECES];
+    //uint64_t enemy_pieces = board->turn ? board->bit_boards[BLACK_PIECES] : board->bit_boards[WHITE_PIECES];
 
     // Legal king moves
     uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, &attacked_squares);
@@ -50,7 +61,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table) {
 
     // King is checked
     if (king_attackers) {
-        int attacker_index = __builtin_ctcll(king_attackers);
+        int attacker_index = __builtin_ctzll(king_attackers);
         king_attackers &= king_attackers - 1;
 
         // King is double checked. Only king moves can be legal.
@@ -64,6 +75,9 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table) {
 
     // Regular moves
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
+    get_moves_from_bit_board(board, legal_moves, &current_move_index, attack_table, pinned_pieces, squares_blocking_king, king_index);
+    
+    return legal_moves;
 }
 
 /* -------------------------- Internal functions ----------------------------*/
@@ -72,7 +86,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table) {
 void get_moves_from_bit_board(Board* board, 
                               Move* moves, 
                               int* current_index, 
-                              AttackTable* attack_table, 
+                              AttackTable* attack_table,
                               uint64_t pinned_pieces,
                               uint64_t squares_blocking_king,
                               int king_index) {
@@ -133,8 +147,8 @@ void get_moves_from_index(int from_index, uint64_t attacks, Move* moves, int* cu
     while (attacks) {
         int to_index = __builtin_ctzll(attacks);
         attacks &= attacks - 1;
-        PieceType from_piece = board_get_piece(board, from_index);
-        PieceType to_piece = board_get_piece(board, to_index);
+        PieceType from_piece = board_get_piece(from_index, board);
+        PieceType to_piece = board_get_piece(to_index, board);
         moves[*current_index] = move_create(from_index, to_index, from_piece, to_piece);
 
         (*current_index)++;
@@ -159,17 +173,52 @@ uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_ta
 
     while (opponent_pieces)
     {
-        int current_index = __builtin_ctcll(opponent_pieces);
+        int current_index = __builtin_ctzll(opponent_pieces);
         opponent_pieces &= opponent_pieces - 1;
 
-        PieceType current_type = get_black_piece_type(board, current_index);
-        // FEL: Borde vara FAKTISKA attacker inte pseudo attacker..
-        uint64_t current_attack_board = (attack_table_get_board(current_index, current_type, attack_table));
+        uint64_t current_attack_board = get_pseudo_attacks_from_index(board, current_index, attack_table);
         (*all_attacks) = (*all_attacks) | (current_attack_board);
-        if (current_attack_board & attack_table->king_table[king_index]) {
+        if (current_attack_board & 1ULL << king_index) {
             king_attackers |= current_index;
         }
     }
+
+    return king_attackers;
+}
+
+uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* attack_table) {
+    PieceType piece_type = board_get_piece(index, board);
+    uint64_t attacks = 0ULL;
+
+    uint64_t friendly_pieces= board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];
+    uint64_t enemy_pieces = board->turn ? board->bit_boards[BLACK_PIECES] : board->bit_boards[WHITE_PIECES];
+
+    switch (piece_type) {
+        case WHITE_QUEEN:
+        case BLACK_QUEEN:
+            attacks = get_queen_moves(friendly_pieces, enemy_pieces, attack_table->queen_table[index], index);
+            break;
+
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            attacks = get_rook_moves(friendly_pieces, enemy_pieces, attack_table->rook_table[index], index);
+            break;
+
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            attacks = get_bishop_moves(friendly_pieces, enemy_pieces, attack_table->bishop_table[index], index);
+            break;
+
+        case WHITE_KNIGHT:
+        case BLACK_KNIGHT: 
+            attacks = get_knight_moves(friendly_pieces, attack_table->knight_table[index]);
+            break;
+
+        default:
+            break;
+    }    
+
+    return attacks;
 }
 
 uint64_t get_pinned_lsb(uint64_t pieces, Board* board) {
@@ -177,7 +226,7 @@ uint64_t get_pinned_lsb(uint64_t pieces, Board* board) {
 
     int first_piece = __builtin_ctzll(pieces);
     pieces &= pieces - 1;
-    int second_piece = __builtin_ctcll(pieces);
+    int second_piece = __builtin_ctzll(pieces);
 
     if (board->turn) {
         if (board_get_piece_color(first_piece, board) && !board_get_piece_color(second_piece, board)) {
@@ -233,35 +282,35 @@ uint64_t get_pinned_pieces(Board* board, int king_index, AttackTable* attack_tab
 
     // Up
     pieces = attack_table->ray_dir_table[king_index][UP] & all_pieces;
-    pinned_pieces |= get_pinned_lsb(pieces, board->turn);
+    pinned_pieces |= get_pinned_lsb(pieces, board);
 
     // Up right
     pieces = attack_table->ray_dir_table[king_index][UP_RIGHT] & all_pieces;
-    pinned_pieces |= get_pinned_lsb(pieces, board->turn);
+    pinned_pieces |= get_pinned_lsb(pieces, board);
 
     // Right    
     pieces = attack_table->ray_dir_table[king_index][RIGHT] & all_pieces;
-    pinned_pieces |= get_pinned_lsb(pieces, board->turn);
+    pinned_pieces |= get_pinned_lsb(pieces, board);
 
     // Down right
     pieces = attack_table->ray_dir_table[king_index][DOWN_RIGHT] & all_pieces;
-    pinned_pieces |= get_pinned_msb(pieces, board->turn);
+    pinned_pieces |= get_pinned_msb(pieces, board);
 
     // Down
     pieces = attack_table->ray_dir_table[king_index][DOWN] & all_pieces;
-    pinned_pieces |= get_pinned_msb(pieces, board->turn);
+    pinned_pieces |= get_pinned_msb(pieces, board);
 
     // Down left
     pieces = attack_table->ray_dir_table[king_index][DOWN_LEFT] & all_pieces;
-    pinned_pieces |= get_pinned_msb(pieces, board->turn);
+    pinned_pieces |= get_pinned_msb(pieces, board);
 
     // Left
     pieces = attack_table->ray_dir_table[king_index][LEFT] & all_pieces;
-    pinned_pieces |= get_pinned_msb(pieces, board->turn);
+    pinned_pieces |= get_pinned_msb(pieces, board);
 
     // Up left
     pieces = attack_table->ray_dir_table[king_index][UP_LEFT] & all_pieces;
-    pinned_pieces |= get_pinned_lsb(pieces, board->turn);
+    pinned_pieces |= get_pinned_lsb(pieces, board);
 
     return pinned_pieces;
 }
@@ -405,31 +454,4 @@ uint64_t get_black_pawn_moves(Board* board, AttackTable* attack_table, int from_
     legal_moves |= attack_attacks & (board->bit_boards[WHITE_PIECES]);
 
     return legal_moves;
-}
-
-
-
-Move* get_legal_assuming_checked(Board* board, uint64_t king_attackers, uint64_t all_attackers, AttackTable* attack_table, int king_index) {
-    int attacker_index = __builtin_ctcll(king_attackers);
-    attacker_index &= attacker_index - 1;
-    Move* legal_moves = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
-    int current_move_index = 0;
-    
-    uint64_t legal_king_moves = attack_table->king_table[king_index];
-    legal_king_moves &= ~board->bit_boards[WHITE_PIECES];
-    legal_king_moves &= ~all_attackers;
-
-    bit_board_to_moves(king_index, legal_king_moves, legal_moves, current_move_index, board);
-
-    // The king is double-checked. Only king moves can be legal.
-    if (king_attackers) {
-        return legal_moves;
-    }
-
-    // The single king attacker must be blocked, captured or the king has to move.
-    uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
-    uint64_t block_squares = bit_board_from_to(king_index, attacker_index);
-    // MAYBE WRONG!!!!!
-    //block_squares ^= ~(1ULL << king_index);
-    block_squares |= (1ULL << attacker_index);
 }
