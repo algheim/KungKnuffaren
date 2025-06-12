@@ -1,5 +1,6 @@
 bin/
 obj/
+venv/
 
 .DS_Store
 
