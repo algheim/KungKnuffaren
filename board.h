@@ -23,7 +23,9 @@ Board* board_create();
 
 void board_draw(Board* board);
 
-void board_move(Move move, Board* board);
+void board_make_move(Move move, Board* board);
+
+void board_unmake_move(Move move, Board* board);
 
 void board_set_piece(int index, PieceType type, Board* board);
 
@@ -36,7 +38,7 @@ void board_change_turn(Board* board);
 
 void board_set_start(Board* board);
 
-void board_get_legal_moves(Board* board, AttackTable* attack_table);
+void board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
 
 void board_destroy(Board* board);
 

@@ -42,9 +42,8 @@ void get_moves_from_bit_board(Board* board,
 
 /* -------------------------- External functions ----------------------------*/
 
-Move* get_legal_moves(Board* board, AttackTable* attack_table) {
+Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
     Move* legal_moves = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
-    int current_move_index = 0;
     uint64_t attacked_squares;
     int king_index = __builtin_ctzll(board->bit_boards[WHITE_KING]);
     // We assume the king doesn't have to be blocked, so all squares 'blocks' the king.
@@ -64,7 +63,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table) {
 
         // King is double checked. Only king moves can be legal.
         if (king_attackers) {
-            get_moves_from_index(king_index, legal_king_moves, legal_moves, &current_move_index, board);
+            get_moves_from_index(king_index, legal_king_moves, legal_moves, move_count, board);
             return legal_moves;
         }
         squares_blocking_king = bit_board_from_to(king_index, attacker_index);
@@ -73,7 +72,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table) {
 
     // Regular moves
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
-    get_moves_from_bit_board(board, legal_moves, &current_move_index, attack_table, pinned_pieces, squares_blocking_king, king_index);
+    get_moves_from_bit_board(board, legal_moves, move_count, attack_table, pinned_pieces, squares_blocking_king, king_index);
     
     return legal_moves;
 }
@@ -145,7 +144,7 @@ void get_moves_from_bit_board(Board* board,
         get_moves_from_index(from_index, current_attacks, moves, current_index, board);
     }
 }
-    
+
 /*
  * @brief   Adds the moves from from_index to every set bit in the attacks board to the move array starting
  *          at the given current_index. Adds a non-exsting move to the end of the sequence, and updates 

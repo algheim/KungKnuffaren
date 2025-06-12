@@ -16,30 +16,50 @@
 Move read_move();
 Move parse_move(char* string);
 void print_move(Move move);
+uint32_t move_generation_test(Board* board, AttackTable* attack_table, int depth);
 
 
 int main(void) {
-    printf("Enter your move ('a2a4' to move a piece from a2 to a4)\n");
     Board* board = board_create();
     board_set_start(board);
-    board_draw(board);
-
     AttackTable* attack_table = attack_table_create();
+    int move_count = 0;
+    
+    int total_moves = move_generation_test(board, attack_table, 5);
 
-    Move* moves = get_legal_moves(board, attack_table);
-
-    int i = 0;
-    print_move(moves[0]);
-    print_move(moves[1]);
-    while (moves[i].from_x != 0 && moves[i].to_x != 0) {
-        print_move(moves[i]);
-        i++;
-    }
+    printf("Total moves: %d\n", total_moves);
 
     board_destroy(board);
     attack_table_destroy(attack_table);
-    free(moves);
+}
 
+uint32_t move_generation_test(Board* board, AttackTable* attack_table, int depth) {
+    if (depth == 0) {
+        return 1;
+    }
+    
+    int move_count = 0;
+    Move* moves = get_legal_moves(board, attack_table, &move_count);
+    uint32_t total_moves = 0;
+
+    int i = 0;
+    while(move_exists(moves[i])) {
+        board_make_move(moves[i], board);
+        total_moves += move_generation_test(board, attack_table, depth - 1);
+        board_unmake_move(moves[i], board);
+        i++;
+    }
+
+    free(moves);
+    return total_moves;
+}
+
+void print_legal_moves(Move* moves) {
+    int i = 0;
+    while (move_exists(moves[i])) {
+        move_print(moves[i]);
+        i++;
+    }
 }
 
 

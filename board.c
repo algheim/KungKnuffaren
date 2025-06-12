@@ -43,10 +43,16 @@ void board_draw(Board* board) {
     printf("   a b c d e f g h \n");
 }
 
-void board_move(Move move, Board* board) {
+void board_make_move(Move move, Board* board) {
     PieceType piece_type = board_get_piece(move.from_index, board);
     board_set_piece(move.to_index, piece_type, board);
     board_set_piece(move.from_index, -1, board);
+}
+
+void board_unmake_move(Move move, Board* board) {
+    PieceType piece_type = board_get_piece(move.to_index, board);
+    board_set_piece(move.from_index, piece_type, board);
+    board_set_piece(move.to_index, move.to_type, board);
 }
 
 PieceType board_get_piece(int index, Board* board) {
@@ -96,20 +102,34 @@ PieceType get_black_piece_type(Board* board, int index) {
 }
 
 
-void board_set_piece(int index, PieceType type, Board* board) {
-    board->bit_boards[type] |= (1ULL << index);
+void board_set_piece(int index, PieceType new_type, Board* board) {
+    PieceType current_type = board_get_piece(index, board);
+    if (board_get_piece_color(index, board)) {
+        board->bit_boards[WHITE_PIECES] &= ~(1ULL << index);
+    }
+    else {
+        board->bit_boards[BLACK_PIECES] &= ~(1ULL << index);
+    }
 
+    if (current_type != -1) {
+        board->bit_boards[current_type] &= ~(1ULL << index);
+    }
+    if (new_type == -1) {
+        return;
+    }
+
+    board->bit_boards[new_type] |= (1ULL << index);
     // Possibly unnecessary to keep updated all the time.
-    if (type >= WHITE_KING && type <= WHITE_PAWN) {
+    if (new_type >= WHITE_KING && new_type <= WHITE_PAWN) {
         board->bit_boards[WHITE_PIECES] |= (1ULL << index);
     }
-    else if (type >= BLACK_KING && type <= BLACK_PAWN) {
+    else if (new_type >= BLACK_KING && new_type <= BLACK_PAWN) {
         board->bit_boards[BLACK_PIECES] |= (1ULL << index);
     }
 }
 
-void board_get_legal_moves(Board* board, AttackTable* attack_table) {
-    get_legal_moves(board, attack_table);
+void board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
+    get_legal_moves(board, attack_table, move_count);
 }
 
 void board_change_turn(Board* board) {
