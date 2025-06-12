@@ -21,8 +21,8 @@ typedef struct move {
     int to_x;
     int to_y;
 
-    char from_index;
-    char to_index;
+    int from_index;
+    int to_index;
     int from_type;
     int to_type;
     int score;
@@ -40,5 +40,7 @@ PieceType move_get_to_index(Move move);
 Move move_create(int from_index, int to_index, PieceType piece, PieceType capture);
 
 bool move_exists(Move move);
+
+void move_print(Move move);
 
 #endif

@@ -29,6 +29,9 @@ void board_set_piece(int index, PieceType type, Board* board);
 
 PieceType board_get_piece(int index, Board* board);
 
+// True if white, else false.
+bool board_get_piece_color(int index, Board* board);
+
 void board_change_turn(Board* board);
 
 void board_set_start(Board* board);
