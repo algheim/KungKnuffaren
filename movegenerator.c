@@ -43,9 +43,16 @@ void get_moves_from_bit_board(Board* board,
 /* -------------------------- External functions ----------------------------*/
 
 Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
+    //printf("Generating legal moves for %s\n", board->turn ? "white" : "black");
     Move* legal_moves = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
     uint64_t attacked_squares;
-    int king_index = __builtin_ctzll(board->bit_boards[WHITE_KING]);
+    int king_index;
+    if (board->turn) {
+        king_index = __builtin_ctzll(board->bit_boards[WHITE_KING]);
+    }
+    else {
+        king_index = __builtin_ctzll(board->bit_boards[BLACK_KING]);
+    }
     // We assume the king doesn't have to be blocked, so all squares 'blocks' the king.
     uint64_t squares_blocking_king = ~0ULL;
     uint64_t friendly_pieces= board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];

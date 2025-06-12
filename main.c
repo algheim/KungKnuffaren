@@ -25,8 +25,7 @@ int main(void) {
     AttackTable* attack_table = attack_table_create();
     int move_count = 0;
     
-    int total_moves = move_generation_test(board, attack_table, 5);
-
+    int total_moves = move_generation_test(board, attack_table, 2);
     printf("Total moves: %d\n", total_moves);
 
     board_destroy(board);
@@ -42,12 +41,12 @@ uint32_t move_generation_test(Board* board, AttackTable* attack_table, int depth
     Move* moves = get_legal_moves(board, attack_table, &move_count);
     uint32_t total_moves = 0;
 
-    int i = 0;
-    while(move_exists(moves[i])) {
+    for (int i = 0 ; i < move_count ; i++) {
         board_make_move(moves[i], board);
+        board_change_turn(board);
         total_moves += move_generation_test(board, attack_table, depth - 1);
         board_unmake_move(moves[i], board);
-        i++;
+        board_change_turn(board);
     }
 
     free(moves);
