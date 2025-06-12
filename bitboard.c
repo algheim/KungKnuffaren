@@ -6,6 +6,19 @@
 
 int min(int n1, int n2);
 
+void bit_board_print(uint64_t bit_board) {
+    printf("--------\n");
+    for (int row = 7 ; row >= 0 ; row--) {
+        for (int file = 0 ; file < 8 ; file ++) {
+            int square = row * 8 + file;
+            printf("%c", (bit_board & (1ULL << square)) ? '1' : '0');
+        }
+
+        printf("\n");
+    }
+    printf("--------\n");
+}
+
 uint64_t bit_board_from_to(int from, int to) {
     int from_x = from % 8;
     int from_y = from / 8;

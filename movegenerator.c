@@ -48,10 +48,8 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table) {
     uint64_t attacked_squares;
     int king_index = __builtin_ctzll(board->bit_boards[WHITE_KING]);
     // We assume the king doesn't have to be blocked, so all squares 'blocks' the king.
-    uint64_t squares_blocking_king = -0ULL;
-
+    uint64_t squares_blocking_king = ~0ULL;
     uint64_t friendly_pieces= board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];
-    //uint64_t enemy_pieces = board->turn ? board->bit_boards[BLACK_PIECES] : board->bit_boards[WHITE_PIECES];
 
     // Legal king moves
     uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, &attacked_squares);
@@ -124,16 +122,26 @@ void get_moves_from_bit_board(Board* board,
                 current_attacks = get_knight_moves(friendly_pieces, attack_table->knight_table[from_index]);
                 break;
 
+            case WHITE_PAWN:
+                current_attacks = get_white_pawn_moves(board, attack_table, from_index);
+                break;
+
+            case BLACK_PAWN:
+                current_attacks = get_black_pawn_moves(board, attack_table,from_index);
+                break;
+
             default:
                 break;
         }
         
+        //bit_board_print(current_attacks);
         if (pinned_pieces & (1ULL << from_index)) {
             uint64_t pinned_ray = bit_board_get_line(king_index, from_index);
             current_attacks &= pinned_ray;
         }
+        //bit_board_print(squares_blocking_king);
         current_attacks &= squares_blocking_king;
-        
+        //bit_board_print(current_attacks);
         get_moves_from_index(from_index, current_attacks, moves, current_index, board);
     }
 }
@@ -213,6 +221,12 @@ uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* att
         case BLACK_KNIGHT: 
             attacks = get_knight_moves(friendly_pieces, attack_table->knight_table[index]);
             break;
+
+        case WHITE_PAWN:
+            attacks = get_white_pawn_moves(board, attack_table, index);
+
+        case BLACK_PAWN:
+            attacks = get_black_pawn_moves(board, attack_table, index);
 
         default:
             break;
