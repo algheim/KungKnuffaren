@@ -33,7 +33,8 @@ class Gui:
         self.button_board = self._get_button_board()
         self.sprite_paths = self._get_sprite_paths()
         self.chess_lib = chess_lib
-        self.button_pressed = None
+        self.prev_active_square = None
+        self.active_square = None
 
     def draw_board(self):
         self.win.fill((0, 0, 0))
@@ -44,6 +45,18 @@ class Gui:
 
         p.display.flip()
 
+    def update_board(self, board):
+        if self.prev_active_square != None and self.active_square != None:
+            from_index = self.prev_active_square[0] * 8 + self.prev_active_square[1]
+            to_index = self.active_square[0] * 8 + self.active_square[1]
+            move = wrappers.Move()
+            move.from_index = from_index
+            move.to_index = to_index
+            wrappers.board_make_move(self.chess_lib, move, board)
+
+            self.active_square = None
+            self.prev_active_square = None
+
     def update_button_board(self, board):
         for i in range(8):
             for j in range(8):
@@ -53,7 +66,6 @@ class Gui:
                     path = self.sprite_paths[piece_type]
                     sprite = p.image.load(path)
 
-                
                 self.button_board[i][j].set_sprite(sprite)
 
     def update_event(self):
@@ -66,19 +78,23 @@ class Gui:
             if event.type == p.MOUSEBUTTONDOWN:
                 self.event = event
 
-    def update_button_pressed(self):
+    def update_active_square(self):
         if self.event == None:
-            return
+            return False
+        
         for i in range(8):
             for j in range(8):
                 if (self.button_board[i][j].check_if_pressed(self.event.pos[0], self.event.pos[1])):
-                    if self.button_pressed == self.button_board[i][j]:
-                        self.button_pressed = None
+                    if self.active_square == (i, j):
+                        self.prev_active_square = None
+                        self.active_square = None
                     else:
-                        self.button_pressed = self.button_board[i][j]
+                        self.prev_active_square = self.active_square
+                        self.active_square = (i, j)
+                    return True
 
-        print(self.button_pressed)
-
+        return False
+    
     def _get_button_board(self):
         buttons = [[None for i in range(8)] for j in range(8)]
         length = min(SCREEN_LENGTH, SCREEN_HEIGHT) / 8

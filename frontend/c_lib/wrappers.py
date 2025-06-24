@@ -80,6 +80,15 @@ def board_get_piece_w(chess_lib, index, board):
     return chess_lib.board_get_piece(ctypes.c_int(index), board)
 
 
+def board_make_move(chess_lib, move, board):
+    chess_lib.board_make_move.argtypes = [Move, ctypes.POINTER(Board)]
+    chess_lib.board_make_move.restype = None
+
+    print(move.from_index, move.to_index)
+
+    chess_lib.board_make_move(move, board)
+
+
 def attack_table_create_w(chess_lib):
     chess_lib.attack_table_create.argtypes = []
     chess_lib.attack_table_create.restype = ctypes.POINTER(AttackTable)
