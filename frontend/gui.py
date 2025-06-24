@@ -37,15 +37,6 @@ class Gui:
         self.active_square = None
         self.marked_squares = set()
 
-    def draw_board(self):
-        self.win.fill((0, 0, 0))
-
-        for row in self.button_board:
-            for button in row:
-                button.draw(self.win)
-
-        p.display.flip()
-
     def update_board(self, board, attack_table):
         legal_moves, move_count = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
         self.marked_squares = set()
@@ -68,6 +59,14 @@ class Gui:
                 if move.from_index == from_index:
                     self.marked_squares.add(move.to_index)
 
+    def draw_board(self):
+        self.win.fill((0, 0, 0))
+
+        for row in self.button_board:
+            for button in row:
+                button.draw(self.win)
+
+        p.display.flip()
 
     def update_button_board(self, board):
         for i in range(8):
