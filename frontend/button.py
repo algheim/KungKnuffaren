@@ -15,6 +15,8 @@ class Button:
         self.text_size = int(text_size)
         self.text_color = BLACK
         self.main_color = main_color
+        self.secondary_color = None
+        self.dispay_secondary = False
         self.edge_color = edge_color
         self.edge = edge
         self.edge_color = BLACK
@@ -65,6 +67,8 @@ class Button:
     def draw(self, surface):
         if self.highlight:
             color = self.highlight_color
+        elif self.dispay_secondary:
+            color = self.secondary_color
         else:
             color = self.main_color
 

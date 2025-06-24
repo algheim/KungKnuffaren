@@ -13,6 +13,7 @@ def main():
     board = wrappers.board_create_w(chess_lib)
     wrappers.board_set_start_w(chess_lib, board)
     attack_table = wrappers.attack_table_create_w(chess_lib)
+    gui.update_button_board(board)
     gui.draw_board()
 
 
@@ -20,8 +21,9 @@ def main():
         gui.update_event()
 
         if gui.update_active_square():
-            gui.update_board(board)
+            gui.update_board(board, attack_table)
             gui.update_button_board(board)
+
         gui.draw_board()
 
         clock.tick(30)

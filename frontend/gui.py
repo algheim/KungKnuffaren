@@ -35,6 +35,7 @@ class Gui:
         self.chess_lib = chess_lib
         self.prev_active_square = None
         self.active_square = None
+        self.marked_squares = set()
 
     def draw_board(self):
         self.win.fill((0, 0, 0))
@@ -45,7 +46,10 @@ class Gui:
 
         p.display.flip()
 
-    def update_board(self, board):
+    def update_board(self, board, attack_table):
+        legal_moves, move_count = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
+        self.marked_squares = set()
+
         if self.prev_active_square != None and self.active_square != None:
             from_index = self.prev_active_square[0] * 8 + self.prev_active_square[1]
             to_index = self.active_square[0] * 8 + self.active_square[1]
@@ -53,9 +57,17 @@ class Gui:
             move.from_index = from_index
             move.to_index = to_index
             wrappers.board_make_move(self.chess_lib, move, board)
+            wrappers.board_change_turn(self.chess_lib, board)
 
             self.active_square = None
             self.prev_active_square = None
+
+        elif self.active_square != None:
+            from_index = self.active_square[0] * 8 + self.active_square[1]
+            for move in legal_moves:
+                if move.from_index == from_index:
+                    self.marked_squares.add(move.to_index)
+
 
     def update_button_board(self, board):
         for i in range(8):
@@ -65,6 +77,10 @@ class Gui:
                 if piece_type != -1:
                     path = self.sprite_paths[piece_type]
                     sprite = p.image.load(path)
+
+                self.button_board[i][j].dispay_secondary = False
+                if (i * 8 + j) in self.marked_squares:
+                    self.button_board[i][j].dispay_secondary = True
 
                 self.button_board[i][j].set_sprite(sprite)
 
@@ -108,6 +124,7 @@ class Gui:
                     color = DARK_SQUARE
 
                 buttons[i][j] = Button(j * length, i * length, length, length, main_color=color)
+                buttons[i][j].secondary_color = MARKED_SQUARE
 
         return buttons
     

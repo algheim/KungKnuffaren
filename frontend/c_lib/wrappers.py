@@ -79,12 +79,16 @@ def board_get_piece_w(chess_lib, index, board):
 
     return chess_lib.board_get_piece(ctypes.c_int(index), board)
 
+def board_change_turn(chess_lib, board):
+    chess_lib.board_change_turn.argtypes = [ctypes.POINTER(Board)]
+    chess_lib.board_change_turn.restype = None
+
+    chess_lib.board_change_turn(board)
+
 
 def board_make_move(chess_lib, move, board):
     chess_lib.board_make_move.argtypes = [Move, ctypes.POINTER(Board)]
     chess_lib.board_make_move.restype = None
-
-    print(move.from_index, move.to_index)
 
     chess_lib.board_make_move(move, board)
 
