@@ -17,6 +17,7 @@ Move read_move();
 Move parse_move(char* string);
 void print_move(Move move);
 uint32_t move_generation_test(Board* board, AttackTable* attack_table, int depth);
+void print_moves(Move* moves, int move_count);
 
 
 int main(void) {
@@ -24,12 +25,22 @@ int main(void) {
     board_set_start(board);
     AttackTable* attack_table = attack_table_create();
     int move_count = 0;
+
+    Move* moves = get_legal_moves(board, attack_table, &move_count);
+
+    print_moves(moves, move_count);
     
-    int total_moves = move_generation_test(board, attack_table, 5);
-    printf("Total moves: %d\n", total_moves);
+    //int total_moves = move_generation_test(board, attack_table, 5);
+    //printf("Total moves: %d\n", total_moves);
 
     board_destroy(board);
     attack_table_destroy(attack_table);
+}
+
+void print_moves(Move* moves, int move_count) {
+    for (int i = 0 ; i < move_count ; i++) {
+        printf("from: %d \tto: %d\n", moves[i].from_index, moves[i].to_index);
+    }
 }
 
 uint32_t move_generation_test(Board* board, AttackTable* attack_table, int depth) {

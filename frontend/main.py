@@ -1,16 +1,5 @@
 import ctypes
-
-
-class Board(ctypes.Structure):
-    _fields_ = [
-        ("bit_boards", ctypes.c_uint64 * 14),
-        ("en_pessant_board", ctypes.c_uint64),
-        ("turn", ctypes.c_bool),
-    ]
-
-    def __repr__(self):
-        return f"<Board turn={self.turn}, en_passant={self.en_pessant_board}, bit_boards={[hex(b) for b in self.bit_boards]}>"
-
+from c_lib import wrappers
 
 
 def main():
@@ -18,11 +7,16 @@ def main():
     chess_lib = ctypes.CDLL("../backend/shared_lib/shared_lib.so")
 
     chess_lib.board_create.argtypes = []
-    chess_lib.board_create.restype = ctypes.POINTER(Board)
 
-    b = chess_lib.board_create()
+    board = wrappers.board_create_w(chess_lib)
+    wrappers.board_set_start_w(chess_lib, board)
+    attack_table = wrappers.attack_table_create_w(chess_lib)
 
-    print(b.contents)
+    legal_moves, move_count = wrappers.get_legal_moves_w(chess_lib, board, attack_table)
+
+    for move in legal_moves:
+        print(move.from_index, "\t", move.to_index)
+    
 
 
 if __name__ == "__main__":
