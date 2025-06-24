@@ -1,4 +1,22 @@
 import ctypes
+from enum import IntEnum
+
+class PieceType(IntEnum):
+    WHITE_KING = 0
+    WHITE_QUEEN = 1
+    WHITE_ROOK = 2
+    WHITE_BISHOP = 3
+    WHITE_KNIGHT = 4
+    WHITE_PAWN = 5
+    WHITE_PIECES = 6
+
+    BLACK_KING = 7
+    BLACK_QUEEN = 8
+    BLACK_ROOK = 9
+    BLACK_BISHOP = 10
+    BLACK_KNIGHT = 11
+    BLACK_PAWN = 12
+    BLACK_PIECES = 13
 
 
 class Board(ctypes.Structure):
@@ -53,6 +71,13 @@ def board_set_start_w(chess_lib, board):
     chess_lib.board_set_start.restype = None
 
     chess_lib.board_set_start(board)
+
+
+def board_get_piece_w(chess_lib, index, board):
+    chess_lib.board_get_piece.argtypes = [ctypes.c_int, ctypes.POINTER(Board)]
+    chess_lib.board_get_piece.restype = ctypes.c_int
+
+    return chess_lib.board_get_piece(ctypes.c_int(index), board)
 
 
 def attack_table_create_w(chess_lib):
