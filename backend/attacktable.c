@@ -303,58 +303,58 @@ void set_square_dir_table(AttackTable* attack_table) {
         uint64_t left_board = 0;
         uint64_t up_left_board = 0;
     
-        // Up
-        for (int i = y - 1 ; i >= 0 ; i--) {
-            up_board |= set_bit(up_board, x, i);
+        // Down
+        for (int j = y - 1 ; j >= 0 ; j--) {
+            down_board |= set_bit(down_board, x, j);
         }
 
         // Right
-        for (int i = x + 1 ; i < 8 ; i++) {
-            right_board = set_bit(right_board, i, y);
+        for (int j = x + 1 ; j < 8 ; j++) {
+            right_board = set_bit(right_board, j, y);
         }
 
-        // Down
-        for (int i = y + 1 ; i < 8 ; i++) {
-            down_board = set_bit(down_board, x, i);
+        // Up
+        for (int j = y + 1 ; j < 8 ; j++) {
+            up_board = set_bit(up_board, x, j);
         }
 
         // Left
-        for (int i = x - 1 ; i >= 0 ; i--) {
-            left_board = set_bit(left_board, i, y);
-        }
-
-        // Up Right
-        int temp_x = x + 1;
-        int temp_y = y - 1;
-        while ((temp_x < 8) && (temp_y >= 0)) {
-            up_right_board = set_bit(up_right_board, temp_x, temp_y);
-            temp_x++;
-            temp_y--;
-        }
-
-        // Up Left
-        temp_x = x - 1;
-        temp_y = y - 1;
-        while ((temp_x >= 0) && (temp_y >= 0)) {
-            up_left_board = set_bit(up_left_board, temp_x, temp_y);
-            temp_x--;
-            temp_y--;
+        for (int j = x - 1 ; j >= 0 ; j--) {
+            left_board = set_bit(left_board, j, y);
         }
 
         // Down Right
-        temp_x = x + 1;
-        temp_y = y + 1;
-        while ((temp_x < 8) && (temp_y < 8)) {
+        int temp_x = x + 1;
+        int temp_y = y - 1;
+        while ((temp_x < 8) && (temp_y >= 0)) {
             down_right_board = set_bit(down_right_board, temp_x, temp_y);
             temp_x++;
-            temp_y++;
+            temp_y--;
         }
 
         // Down Left
         temp_x = x - 1;
+        temp_y = y - 1;
+        while ((temp_x >= 0) && (temp_y >= 0)) {
+            down_left_board = set_bit(down_left_board, temp_x, temp_y);
+            temp_x--;
+            temp_y--;
+        }
+
+        // Up Right
+        temp_x = x + 1;
+        temp_y = y + 1;
+        while ((temp_x < 8) && (temp_y < 8)) {
+            up_right_board = set_bit(up_right_board, temp_x, temp_y);
+            temp_x++;
+            temp_y++;
+        }
+
+        // Up Left
+        temp_x = x - 1;
         temp_y = y + 1;
         while ((temp_x >= 0) && (temp_y < 8)) {
-            down_left_board = set_bit(down_left_board, temp_x, temp_y);
+            up_left_board = set_bit(up_left_board, temp_x, temp_y);
             temp_x--;
             temp_y++;
         }
