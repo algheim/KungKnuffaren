@@ -39,6 +39,11 @@ class Gui:
 
     def update_board(self, board, attack_table):
         legal_moves, move_count = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
+        wrappers.board_change_turn(self.chess_lib, board)
+        legal_opponent_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
+
+        legal_moves.extend(legal_opponent_moves)
+        
         self.marked_squares = set()
 
         if self.prev_active_square != None and self.active_square != None:

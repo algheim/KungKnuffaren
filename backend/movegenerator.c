@@ -59,17 +59,20 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
 
     // Legal king moves
     uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, &attacked_squares);
+    //bit_board_print(king_attackers);
     uint64_t legal_king_moves = attack_table->king_table[king_index];
     legal_king_moves &= ~friendly_pieces;
     legal_king_moves &= ~attacked_squares;
 
     // King is checked
     if (king_attackers) {
+        printf("King is in check!\n");
         int attacker_index = __builtin_ctzll(king_attackers);
         king_attackers &= king_attackers - 1;
 
         // King is double checked. Only king moves can be legal.
         if (king_attackers) {
+            printf("King is in double check!");
             get_moves_from_index(king_index, legal_king_moves, legal_moves, move_count, board);
             return legal_moves;
         }
@@ -185,6 +188,8 @@ uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_ta
         opponent_pieces = board->bit_boards[WHITE_PIECES];
     }
 
+    // Change turn to get opponent attacks instead of normal attacks.
+    board_change_turn(board);
     while (opponent_pieces)
     {
         int current_index = __builtin_ctzll(opponent_pieces);
@@ -192,11 +197,16 @@ uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_ta
 
         uint64_t current_attack_board = get_pseudo_attacks_from_index(board, current_index, attack_table);
         (*all_attacks) = (*all_attacks) | (current_attack_board);
+
+
         if (current_attack_board & 1ULL << king_index) {
-            king_attackers |= current_index;
+            king_attackers |= (1ULL << current_index);
         }
     }
+    board_change_turn(board);
 
+    printf("King attackers:\n");
+    bit_board_print(king_attackers);
     return king_attackers;
 }
 
