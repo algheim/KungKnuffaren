@@ -12,6 +12,7 @@
 #include "move.h"
 #include "movegenerator.h"
 #include <stdlib.h>
+#include <string.h>
 
 Move read_move();
 Move parse_move(char* string);
@@ -26,12 +27,15 @@ int main(void) {
     AttackTable* attack_table = attack_table_create();
     int move_count = 0;
 
-    Move* moves = get_legal_moves(board, attack_table, &move_count);
+    char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR ";
 
-    print_moves(moves, move_count);
-    
-    //int total_moves = move_generation_test(board, attack_table, 5);
-    //printf("Total moves: %d\n", total_moves);
+    board = board_from_fen(fen, strlen(fen));
+
+    board_draw(board);
+
+    uint32_t count = move_generation_test(board, attack_table, 3);
+
+    printf("Count: %d\n", count);
 
     board_destroy(board);
     attack_table_destroy(attack_table);

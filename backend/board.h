@@ -21,6 +21,8 @@ typedef struct board {
 
 Board* board_create();
 
+Board* board_from_fen(char* fen, int size);
+
 void board_draw(Board* board);
 
 void board_make_move(Move move, Board* board);

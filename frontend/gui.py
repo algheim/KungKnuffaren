@@ -7,8 +7,8 @@ from c_lib import wrappers
 SCREEN_HEIGHT = 600
 SCREEN_LENGTH = 600
 
-LIGHT_SQUARE = (150, 150, 150)
-DARK_SQUARE = (50, 50, 50)
+LIGHT_SQUARE = (230, 230, 250)
+DARK_SQUARE = (70, 130, 180)
 MARKED_SQUARE = (200, 100, 100)
 
 WHITE_KNIGHT_P = os.path.join("sprites", "knight-w.svg")
@@ -43,7 +43,7 @@ class Gui:
         legal_opponent_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
 
         legal_moves.extend(legal_opponent_moves)
-        
+
         self.marked_squares = set()
 
         if self.prev_active_square != None and self.active_square != None:
@@ -59,6 +59,7 @@ class Gui:
             self.prev_active_square = None
 
         elif self.active_square != None:
+            self.marked_squares.add(self.active_square[0]*8 + self.active_square[1])
             from_index = self.active_square[0] * 8 + self.active_square[1]
             for move in legal_moves:
                 if move.from_index == from_index:

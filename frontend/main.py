@@ -3,6 +3,8 @@ from c_lib import wrappers
 from gui import Gui
 import pygame as p
 
+
+
 def main():
     ctypes.cdll.LoadLibrary("../backend/shared_lib/shared_lib.so")
     chess_lib = ctypes.CDLL("../backend/shared_lib/shared_lib.so")

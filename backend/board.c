@@ -2,6 +2,7 @@
 #include "movegenerator.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "fenparser.h"
 
 
 
@@ -14,13 +15,17 @@ Board* board_create() {
     Board* board = malloc(sizeof(Board));
 
     for (int i = 0 ; i < BIT_BOARD_COUNT ; i++) {
-        board->bit_boards[i] = 0;
+        board->bit_boards[i] = 0ULL;
     }
     board->turn = true;
 
-    board->en_pessant_board = 0;
+    board->en_pessant_board = 0ULL;
 
     return board;
+}
+
+Board* board_from_fen(char* fen, int size) {
+    return fen_to_board(fen, size);
 }
 
 void board_draw(Board* board) {

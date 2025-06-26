@@ -65,13 +65,11 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
 
     // King is checked
     if (king_attackers) {
-        printf("King is in check!\n");
         int attacker_index = __builtin_ctzll(king_attackers);
         king_attackers &= king_attackers - 1;
 
         // King is double checked. Only king moves can be legal.
         if (king_attackers) {
-            printf("King is in double check!");
             get_moves_from_index(king_index, legal_king_moves, legal_moves, move_count, board);
             return legal_moves;
         }
@@ -264,21 +262,16 @@ uint64_t get_pinned_lsb(uint64_t pieces, Board* board, bool diagonal) {
 
     bool first_is_friendly = board_get_piece_color(first_piece, board) == board->turn;
     bool second_is_enemy = board_get_piece_color(second_piece, board) != board->turn;
-    printf("%d %d\n", first_is_friendly, second_is_enemy);
-
 
     if (first_is_friendly && second_is_enemy) {
-        printf("1\n");
         PieceType type = board_get_piece(second_piece, board);
         if (diagonal) {
             if (type == BLACK_QUEEN || type == WHITE_QUEEN || type == BLACK_BISHOP || type == WHITE_BISHOP) {
-                printf("Hejhje");
                 return (1ULL << first_piece);
             }
         }
         else {
             if (type == BLACK_QUEEN || type == WHITE_QUEEN || type == BLACK_ROOK || type == WHITE_ROOK) {
-                printf("hejhej");
                 return (1ULL << first_piece);
             }
         }
@@ -298,20 +291,15 @@ uint64_t get_pinned_msb(uint64_t pieces, Board* board, bool diagonal) {
     bool first_is_friendly = board_get_piece_color(first_piece, board) == board->turn;
     bool second_is_enemy = board_get_piece_color(second_piece, board) != board->turn;
 
-    printf("%d %d\n", first_is_friendly, second_is_enemy);
-
     if (first_is_friendly && second_is_enemy) {
         PieceType type = board_get_piece(second_piece, board);
-        printf("1\n");
         if (diagonal) {
             if (type == BLACK_QUEEN || type == WHITE_QUEEN || type == BLACK_BISHOP || type == WHITE_BISHOP) {
-                printf("HEJHEJ\n");
                 return (1ULL << first_piece);
             }
         }
         else {
             if (type == BLACK_QUEEN || type == WHITE_QUEEN || type == BLACK_ROOK || type == WHITE_ROOK) {
-                printf("HEJHEJ");
                 return (1ULL << first_piece);
             }
         }

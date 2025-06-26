@@ -14,7 +14,8 @@ OBJS = \
     $(OBJ_PATH)movegenerator.o \
     $(OBJ_PATH)attacktable.o \
     $(OBJ_PATH)move.o \
-    $(OBJ_PATH)bitboard.o
+    $(OBJ_PATH)bitboard.o \
+	$(OBJ_PATH)fenparser.o
 
 # Default target
 backend: $(BIN_PATH)kungknuffaren
