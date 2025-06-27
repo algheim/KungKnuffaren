@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include "fenparser.h"
 
-#define WHITE_CASTLE_QUEEN 1000
-#define WHITE_CASTLE_KING 0100
-#define BLACK_CASTLE_QUEEN 0010
-#define BLACK_CASTLE_KING 0001
+#define WHITE_CASTLE_QUEEN (1 << 0) // 0001
+#define WHITE_CASTLE_KING  (1 << 1) // 0010
+#define BLACK_CASTLE_QUEEN (1 << 2) // 0100
+#define BLACK_CASTLE_KING  (1 << 3) // 1000
 
 /* -------------------- Internal function declarations --------------------- */
 void print_piece(PieceType piece_type);
@@ -29,6 +29,14 @@ Board* board_create() {
 
 Board* board_from_fen(char* fen, int size) {
     return fen_to_board(fen, size);
+}
+
+char* board_get_fen(Board* board) {
+    return board_to_fen(board);
+}
+
+bool board_get_turn(Board* board) {
+    return board->turn;
 }
 
 void board_draw(Board* board) {
@@ -221,6 +229,45 @@ bool board_black_can_castle_king(Board* board) {
 
 bool board_black_can_castle_queen(Board* board) {
     return board->castling_rights & BLACK_CASTLE_QUEEN;
+}
+
+void board_set_castling_rights(char side, bool value, Board* board) {
+    switch(side) {
+        case 'Q':
+            if (value) {
+                board->castling_rights |= WHITE_CASTLE_QUEEN;
+            }
+            else {
+                board->castling_rights &= ~WHITE_CASTLE_QUEEN;
+            }
+            break;
+        case 'K':
+            if (value) {
+                board->castling_rights |= WHITE_CASTLE_KING;
+            }
+            else {
+                board->castling_rights &= ~WHITE_CASTLE_KING;
+            }
+            break;
+        case 'q':
+            if (value) {
+                board->castling_rights |= BLACK_CASTLE_QUEEN;
+            }
+            else {
+                board->castling_rights &= ~BLACK_CASTLE_QUEEN;
+            }
+            break;
+        case 'k':
+            if (value) {
+                board->castling_rights |= BLACK_CASTLE_KING;
+            }
+            else {
+                board->castling_rights &= ~BLACK_CASTLE_KING;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 void board_destroy(Board* board) {

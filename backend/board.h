@@ -24,6 +24,8 @@ Board* board_create();
 
 Board* board_from_fen(char* fen, int size);
 
+char* board_get_fen(Board* board);
+
 void board_draw(Board* board);
 
 void board_make_move(Move move, Board* board);
@@ -39,6 +41,8 @@ bool board_get_piece_color(int index, Board* board);
 
 void board_change_turn(Board* board);
 
+bool board_get_turn(Board* board);
+
 void board_set_start(Board* board);
 
 void board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
@@ -52,6 +56,8 @@ bool board_white_can_castle_queen(Board* board);
 bool board_black_can_castle_king(Board* board);
 
 bool board_black_can_castle_queen(Board* board);
+
+void board_set_castling_rights(char side, bool value, Board* board);
 
 void board_destroy(Board* board);
 
