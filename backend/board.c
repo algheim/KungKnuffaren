@@ -4,7 +4,10 @@
 #include <stdio.h>
 #include "fenparser.h"
 
-
+#define WHITE_CASTLE_QUEEN 1000
+#define WHITE_CASTLE_KING 0100
+#define BLACK_CASTLE_QUEEN 0010
+#define BLACK_CASTLE_KING 0001
 
 /* -------------------- Internal function declarations --------------------- */
 void print_piece(PieceType piece_type);
@@ -18,8 +21,8 @@ Board* board_create() {
         board->bit_boards[i] = 0ULL;
     }
     board->turn = true;
-
     board->en_pessant_board = 0ULL;
+    board->castling_rights = 0x0F;
 
     return board;
 }
@@ -50,6 +53,37 @@ void board_draw(Board* board) {
 
 void board_make_move(Move move, Board* board) {
     PieceType piece_type = board_get_piece(move.from_index, board);
+    switch(piece_type) {
+        case WHITE_KING:
+            board->castling_rights &= ~(WHITE_CASTLE_KING | WHITE_CASTLE_QUEEN);
+            break;
+
+        case BLACK_KING:
+            board->castling_rights &= ~(BLACK_CASTLE_KING | BLACK_CASTLE_QUEEN);
+            break;
+
+        case WHITE_ROOK:
+            if (move.from_index == 0) {
+                board->castling_rights &= ~WHITE_CASTLE_QUEEN;
+            }
+            if (move.from_index == 7) {
+                board->castling_rights &= ~WHITE_CASTLE_KING;
+            }
+            break;
+
+        case BLACK_ROOK:
+            if (move.from_index == 56) {
+                board->castling_rights &= ~BLACK_CASTLE_QUEEN;
+            }
+            if (move.from_index == 63) {
+                board->castling_rights &= ~BLACK_CASTLE_KING;
+            }
+            break;
+
+        default:
+            break;
+    }
+
     board_set_piece(move.to_index, piece_type, board);
     board_set_piece(move.from_index, -1, board);
 }
@@ -169,10 +203,29 @@ void board_set_start(Board* board) {
     board_set_piece(7, WHITE_ROOK, board);
 }
 
+void board_set_turn(bool turn, Board* board) {
+    board->turn = turn;
+}
+
+bool board_white_can_castle_king(Board* board) {
+    return board->castling_rights & WHITE_CASTLE_KING;
+}
+
+bool board_white_can_castle_queen(Board* board) {
+    return board->castling_rights & WHITE_CASTLE_QUEEN;
+}
+
+bool board_black_can_castle_king(Board* board) {
+    return board->castling_rights & BLACK_CASTLE_KING;
+}
+
+bool board_black_can_castle_queen(Board* board) {
+    return board->castling_rights & BLACK_CASTLE_QUEEN;
+}
+
 void board_destroy(Board* board) {
     free(board);
 }
-
 
 /* -------------------------- Internal functions --------------------------- */
 

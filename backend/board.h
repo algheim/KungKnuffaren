@@ -16,6 +16,7 @@ typedef struct board {
     uint64_t bit_boards[14];
     uint64_t en_pessant_board;
     bool turn;
+    char castling_rights;
 } Board;
 
 
@@ -41,6 +42,16 @@ void board_change_turn(Board* board);
 void board_set_start(Board* board);
 
 void board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
+
+void board_set_turn(bool turn, Board* board);
+
+bool board_white_can_castle_king(Board* board);
+
+bool board_white_can_castle_queen(Board* board);
+
+bool board_black_can_castle_king(Board* board);
+
+bool board_black_can_castle_queen(Board* board);
 
 void board_destroy(Board* board);
 

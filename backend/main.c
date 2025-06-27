@@ -13,6 +13,7 @@
 #include "movegenerator.h"
 #include <stdlib.h>
 #include <string.h>
+#include "bitboard.h"
 
 Move read_move();
 Move parse_move(char* string);
@@ -27,11 +28,13 @@ int main(void) {
     AttackTable* attack_table = attack_table_create();
     int move_count = 0;
 
-    char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR ";
+    char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b ";
 
     board = board_from_fen(fen, strlen(fen));
 
     board_draw(board);
+
+    printf("%d\n", board->turn);
 
     uint32_t count = move_generation_test(board, attack_table, 3);
 
