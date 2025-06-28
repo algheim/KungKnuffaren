@@ -109,20 +109,20 @@ int set_active_color_char(char* fen, Board* board, int* current_index) {
 
 int set_piece_chars(char* fen, Board* board, int* current_index) {
     int empty_counter = 0;
-    for (int i = 0 ; i < 64 ; i++) {
+
+    for (int i = 0; i < 64; i++) {
         int fen_mapping = map_fen_index(i);
         PieceType type = board_get_piece(fen_mapping, board);
 
         if (i % 8 == 0 && i != 0) {
             if (empty_counter != 0) {
-                if (add_fen_char(fen, (char) empty_counter + '0', current_index) == -1) {
+                if (add_fen_char(fen, '0' + empty_counter, current_index) == -1)
                     return -1;
-                }
                 empty_counter = 0;
             }
-            if (add_fen_char(fen, '/', current_index) == -1) {
+
+            if (add_fen_char(fen, '/', current_index) == -1)
                 return -1;
-            }
         }
 
         if (type == -1) {
@@ -131,75 +131,43 @@ int set_piece_chars(char* fen, Board* board, int* current_index) {
         }
 
         if (empty_counter != 0) {
-            fen[*current_index] = empty_counter;
-            empty_counter = 0;
-
-            if (++(*current_index) >= FEN_BUF_SIZE) {
+            if (add_fen_char(fen, '0' + empty_counter, current_index) == -1)
                 return -1;
-            }
+            empty_counter = 0;
         }
 
+        char piece_char = '?';
         switch(type) {
-            case WHITE_KING:
-                fen[*current_index] = 'K';
-                break;
-            case WHITE_QUEEN:
-                fen[*current_index] = 'Q';
-                break;
-            case WHITE_ROOK:
-                fen[*current_index] = 'R';
-                break;
-            case WHITE_BISHOP:
-                fen[*current_index] = 'B';
-                break;
-            case WHITE_KNIGHT:
-                fen[*current_index] = 'N';
-                break;
-            case WHITE_PAWN:
-                fen[*current_index] = 'P';
-                break;
-            case BLACK_KING:
-                fen[*current_index] = 'k';
-                break;
-            case BLACK_QUEEN:
-                fen[*current_index] = 'q';
-                break;
-            case BLACK_ROOK:
-                fen[*current_index] = 'r';
-                break;
-            case BLACK_BISHOP:
-                fen[*current_index] = 'b';
-                break;
-            case BLACK_KNIGHT:
-                fen[*current_index] = 'n';
-                break;
-            case BLACK_PAWN:
-                fen[*current_index] = 'p';
-                break;
-            default:
-                break;
+            case WHITE_KING:    piece_char = 'K'; break;
+            case WHITE_QUEEN:   piece_char = 'Q'; break;
+            case WHITE_ROOK:    piece_char = 'R'; break;
+            case WHITE_BISHOP:  piece_char = 'B'; break;
+            case WHITE_KNIGHT:  piece_char = 'N'; break;
+            case WHITE_PAWN:    piece_char = 'P'; break;
+            case BLACK_KING:    piece_char = 'k'; break;
+            case BLACK_QUEEN:   piece_char = 'q'; break;
+            case BLACK_ROOK:    piece_char = 'r'; break;
+            case BLACK_BISHOP:  piece_char = 'b'; break;
+            case BLACK_KNIGHT:  piece_char = 'n'; break;
+            case BLACK_PAWN:    piece_char = 'p'; break;
+            default: return -1;
         }
 
-        if (++(*current_index) >= FEN_BUF_SIZE) {
+        if (add_fen_char(fen, piece_char, current_index) == -1)
             return -1;
-        }
     }
-
+    // Final flush of empty squares
     if (empty_counter != 0) {
-        fen[*current_index] = empty_counter;
-        empty_counter = 0;
-
-        if (++(*current_index) >= FEN_BUF_SIZE) {
+        if (add_fen_char(fen, '0' + empty_counter, current_index) == -1)
             return -1;
-        }
     }
 
-    if (add_fen_char(fen, ' ', current_index) == -1) {
+    if (add_fen_char(fen, ' ', current_index) == -1)
         return -1;
-    }
 
     return 0;
 }
+
 
 int add_fen_char(char* fen, char c, int* current_index) {
     fen[*current_index] = c;

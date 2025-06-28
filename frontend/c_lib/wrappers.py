@@ -109,3 +109,18 @@ def get_legal_moves_w(chess_lib, board, attack_table):
     legal_moves = chess_lib.get_legal_moves(board, attack_table, ctypes.pointer(move_count))
 
     return legal_moves[:move_count.value], move_count.value
+
+def board_from_fen_w(chess_lib, fen):
+    fen = ctypes.create_string_buffer(fen.encode('utf-8'))
+    chess_lib.board_from_fen.argtypes = [ctypes.POINTER(ctypes.c_char), ctypes.c_int]
+    chess_lib.board_from_fen.restype = ctypes.POINTER(Board)
+
+    return chess_lib.board_from_fen(fen, ctypes.c_int(len(fen) + 1))
+
+
+def board_get_fen_w(chess_lib, board):
+    chess_lib.board_get_fen.argtypes = [ctypes.POINTER(Board)]
+    chess_lib.board_get_fen.restype = ctypes.POINTER(ctypes.c_char)
+
+    fen_ptr = chess_lib.board_get_fen(board)
+    return ctypes.string_at(fen_ptr).decode('utf-8')

@@ -9,3 +9,4 @@ test.c
 makefile_test
 recompile.sh
 todo.md
+movegen_test.py

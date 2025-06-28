@@ -36,19 +36,22 @@ class Gui:
         self.prev_active_square = None
         self.active_square = None
         self.marked_squares = set()
+        self.square_size = min(SCREEN_LENGTH, SCREEN_HEIGHT) / 8
 
     def update_board(self, board, attack_table):
         legal_moves, move_count = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
         wrappers.board_change_turn(self.chess_lib, board)
         legal_opponent_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
+        wrappers.board_change_turn(self.chess_lib, board)
+
 
         legal_moves.extend(legal_opponent_moves)
 
         self.marked_squares = set()
 
         if self.prev_active_square != None and self.active_square != None:
-            from_index = self.prev_active_square[0] * 8 + self.prev_active_square[1]
-            to_index = self.active_square[0] * 8 + self.active_square[1]
+            from_index = self.prev_active_square
+            to_index = self.active_square
             move = wrappers.Move()
             move.from_index = from_index
             move.to_index = to_index
@@ -59,8 +62,8 @@ class Gui:
             self.prev_active_square = None
 
         elif self.active_square != None:
-            self.marked_squares.add(self.active_square[0]*8 + self.active_square[1])
-            from_index = self.active_square[0] * 8 + self.active_square[1]
+            self.marked_squares.add(self.active_square)
+            from_index = self.active_square
             for move in legal_moves:
                 if move.from_index == from_index:
                     self.marked_squares.add(move.to_index)
@@ -68,26 +71,25 @@ class Gui:
     def draw_board(self):
         self.win.fill((0, 0, 0))
 
-        for row in self.button_board:
-            for button in row:
-                button.draw(self.win)
+        for button in self.button_board:
+            button.draw(self.win)
 
         p.display.flip()
 
     def update_button_board(self, board):
-        for i in range(8):
-            for j in range(8):
-                sprite = None
-                piece_type = wrappers.board_get_piece_w(self.chess_lib, i * 8 + j, board)
-                if piece_type != -1:
-                    path = self.sprite_paths[piece_type]
-                    sprite = p.image.load(path)
+        for i in range(64):
+            sprite = None
+            piece_type = wrappers.board_get_piece_w(self.chess_lib, i , board)
+            if piece_type != -1:
+                path = self.sprite_paths[piece_type]
+                sprite = p.transform.scale(p.image.load(path), (self.square_size, self.square_size))
 
-                self.button_board[i][j].dispay_secondary = False
-                if (i * 8 + j) in self.marked_squares:
-                    self.button_board[i][j].dispay_secondary = True
 
-                self.button_board[i][j].set_sprite(sprite)
+            self.button_board[i].dispay_secondary = False
+            if i in self.marked_squares:
+                self.button_board[i].dispay_secondary = True
+
+            self.button_board[i].set_sprite(sprite)
 
     def update_event(self):
         self.event = None
@@ -103,33 +105,31 @@ class Gui:
         if self.event == None:
             return False
         
-        for i in range(8):
-            for j in range(8):
-                if (self.button_board[i][j].check_if_pressed(self.event.pos[0], self.event.pos[1])):
-                    if self.active_square == (i, j):
-                        self.prev_active_square = None
-                        self.active_square = None
-                    else:
-                        self.prev_active_square = self.active_square
-                        self.active_square = (i, j)
-                    return True
-
+        for i in range(64):
+            if (self.button_board[i].check_if_pressed(self.event.pos[0], self.event.pos[1])):
+                if self.active_square == i:
+                    self.prev_active_square = None
+                    self.active_square = None
+                else:
+                    self.prev_active_square = self.active_square
+                    self.active_square = i
+                    print(self.active_square)
+                return True
         return False
     
     def _get_button_board(self):
-        buttons = [[None for i in range(8)] for j in range(8)]
+        buttons = [None for i in range(64)]
         length = min(SCREEN_LENGTH, SCREEN_HEIGHT) / 8
+        
+        for i in range(64):
+            rank = i // 8
+            file = i % 8
 
-        for i in range(8):
-            for j in range(8):
-                color = LIGHT_SQUARE
-                if i % 2 == 0 and j % 2 != 0:
-                    color = DARK_SQUARE
-                if i % 2 != 0 and j % 2 == 0:
-                    color = DARK_SQUARE
+            color = LIGHT_SQUARE if (rank + file) % 2 == 0 else DARK_SQUARE
+            total_length = length * 7
 
-                buttons[i][j] = Button(j * length, i * length, length, length, main_color=color)
-                buttons[i][j].secondary_color = MARKED_SQUARE
+            buttons[i] = Button(file * length, total_length - rank * length, length, length, main_color=color)
+            buttons[i].secondary_color = MARKED_SQUARE
 
         return buttons
     

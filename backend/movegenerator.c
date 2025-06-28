@@ -79,8 +79,8 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
 
     // Regular moves
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
-    if (board->turn) {
-        //bit_board_print(pinned_pieces);
+    if (!board->turn) {
+        bit_board_print(pinned_pieces);
     }
     get_moves_from_bit_board(board, legal_moves, move_count, attack_table, pinned_pieces, squares_blocking_king, king_index);
     get_moves_from_index(king_index, legal_king_moves, legal_moves, move_count, board);
@@ -263,6 +263,9 @@ uint64_t get_pinned_lsb(uint64_t pieces, Board* board, bool diagonal) {
     bool first_is_friendly = board_get_piece_color(first_piece, board) == board->turn;
     bool second_is_enemy = board_get_piece_color(second_piece, board) != board->turn;
 
+        if (!board->turn) {
+            printf("%d %d\n", first_piece, second_piece);
+        }
     if (first_is_friendly && second_is_enemy) {
         PieceType type = board_get_piece(second_piece, board);
         if (diagonal) {
