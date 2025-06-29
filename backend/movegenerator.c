@@ -55,7 +55,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
     }
     // We assume the king doesn't have to be blocked, so all squares 'blocks' the king.
     uint64_t squares_blocking_king = ~0ULL;
-    uint64_t friendly_pieces= board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];
+    uint64_t friendly_pieces = board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];
 
     // Legal king moves
     uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, &attacked_squares);
@@ -79,9 +79,6 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
 
     // Regular moves
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
-    if (!board->turn) {
-        bit_board_print(pinned_pieces);
-    }
     get_moves_from_bit_board(board, legal_moves, move_count, attack_table, pinned_pieces, squares_blocking_king, king_index);
     get_moves_from_index(king_index, legal_king_moves, legal_moves, move_count, board);
 
@@ -147,6 +144,8 @@ void get_moves_from_bit_board(Board* board,
                 current_attacks = 0ULL;
                 break;
         }
+
+        current_attacks &= ~friendly_pieces;
         
         if (pinned_pieces & (1ULL << from_index)) {
             uint64_t pinned_ray = bit_board_get_line(king_index, from_index);
@@ -263,9 +262,6 @@ uint64_t get_pinned_lsb(uint64_t pieces, Board* board, bool diagonal) {
     bool first_is_friendly = board_get_piece_color(first_piece, board) == board->turn;
     bool second_is_enemy = board_get_piece_color(second_piece, board) != board->turn;
 
-        if (!board->turn) {
-            printf("%d %d\n", first_piece, second_piece);
-        }
     if (first_is_friendly && second_is_enemy) {
         PieceType type = board_get_piece(second_piece, board);
         if (diagonal) {
@@ -288,7 +284,7 @@ uint64_t get_pinned_msb(uint64_t pieces, Board* board, bool diagonal) {
         return 0ULL;
 
     int first_piece = 63 - __builtin_clzll(pieces);
-    pieces &= pieces - 1;
+    pieces ^= (1ULL << first_piece);
     int second_piece = 63 - __builtin_clzll(pieces);
 
     bool first_is_friendly = board_get_piece_color(first_piece, board) == board->turn;
@@ -352,7 +348,7 @@ uint64_t get_pinned_pieces(Board* board, int king_index, AttackTable* attack_tab
 }
 
 uint64_t get_knight_moves(uint64_t friendly_pieces, uint64_t attacks) {
-    return attacks & (~friendly_pieces);
+    return attacks;// & (~friendly_pieces);
 }
 
 uint64_t get_rook_moves(uint64_t friendly_pieces, uint64_t enemy_pieces, uint64_t attacks, int from_index) {
@@ -399,7 +395,7 @@ uint64_t get_rook_moves(uint64_t friendly_pieces, uint64_t enemy_pieces, uint64_
         current_index++;
     }
 
-    legal_moves &= (~friendly_pieces);
+    //legal_moves &= (~friendly_pieces);
     //printf("ROOOK MOVES from %d: \n", from_index);
     //attack_table_print(legal_moves);
     return legal_moves;
@@ -449,7 +445,7 @@ uint64_t get_bishop_moves(uint64_t friendly_pieces, uint64_t enemy_pieces, uint6
         current_index += 7;      
     }
 
-    legal_moves &= (~friendly_pieces);
+    //legal_moves &= (~friendly_pieces);
     //printf("BISHOP MOVES from %d: \n", from_index);
     //attack_table_print(legal_moves);
     return legal_moves;
@@ -466,7 +462,7 @@ uint64_t get_queen_moves(uint64_t friendly_pieces, uint64_t enemy_pieces, uint64
 }
 
 uint64_t get_king_moves(uint64_t friendly_pieces, uint64_t attacks) {
-    return attacks & (~friendly_pieces);
+    return attacks;// & (~friendly_pieces);
 }
 
 uint64_t get_white_pawn_moves(Board* board, AttackTable* attack_table, int from_index) {
@@ -476,6 +472,12 @@ uint64_t get_white_pawn_moves(Board* board, AttackTable* attack_table, int from_
 
     legal_moves |= normal_attacks & (~(board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]));
     legal_moves |= attack_attacks & (board->bit_boards[BLACK_PIECES]);
+
+    if (from_index / 8 == 1) {
+        if ((board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]) & (1ULL << (from_index + 8))) {
+            legal_moves ^= 1ULL << (from_index + 16);
+        }
+    }
 
     return legal_moves;
 }
@@ -487,6 +489,12 @@ uint64_t get_black_pawn_moves(Board* board, AttackTable* attack_table, int from_
 
     legal_moves |= normal_attacks & (~(board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]));
     legal_moves |= attack_attacks & (board->bit_boards[WHITE_PIECES]);
+
+    if (from_index / 8 == 6) {
+        if ((board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]) & (1ULL << (from_index - 8))) {
+            legal_moves ^= 1ULL << (from_index - 16);
+        }
+    }
 
     return legal_moves;
 }

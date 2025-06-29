@@ -113,7 +113,7 @@ class Gui:
                 else:
                     self.prev_active_square = self.active_square
                     self.active_square = i
-                    print(self.active_square)
+                    print("Active square:", self.active_square)
                 return True
         return False
     

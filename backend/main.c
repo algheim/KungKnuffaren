@@ -23,14 +23,10 @@ void print_moves(Move* moves, int move_count);
 
 
 int main(void) {
-    Board* board = board_create();
-    board_set_start(board);
     AttackTable* attack_table = attack_table_create();
-    //int move_count = 0;
-
     char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kqk - 0 0 ";
 
-    board = board_from_fen(fen, strlen(fen));
+    Board* board = board_from_fen(fen, strlen(fen));
 
     board_draw(board);
 
@@ -38,7 +34,8 @@ int main(void) {
 
     printf("Output FEN: %s\n", out_fen);
 
-    //uint32_t count = move_generation_test(board, attack_table, 3);
+    uint32_t count = move_generation_test(board, attack_table, 4);
+    printf("Count: %d\n", count);
 
     board_destroy(board);
     attack_table_destroy(attack_table);
