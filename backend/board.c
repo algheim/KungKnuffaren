@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "fenparser.h"
+#include "evaluate.h"
 
 #define WHITE_CASTLE_QUEEN (1 << 0) // 0001
 #define WHITE_CASTLE_KING  (1 << 1) // 0010
@@ -33,6 +34,10 @@ Board* board_from_fen(char* fen, int size) {
 
 char* board_get_fen(Board* board) {
     return board_to_fen(board);
+}
+
+int board_evaluate(Board* board) {
+    return evaluate_board(board);
 }
 
 bool board_get_turn(Board* board) {

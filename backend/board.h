@@ -26,6 +26,8 @@ Board* board_from_fen(char* fen, int size);
 
 char* board_get_fen(Board* board);
 
+int board_evaluate(Board* board);
+
 void board_draw(Board* board);
 
 void board_make_move(Move move, Board* board);

@@ -1,7 +1,7 @@
 #ifndef FENPARSER_H
 #define FENPARSER_H
 
-typedef struct board Board;
+#include "board.h"
 
 Board* fen_to_board(char* fen, int size);
 

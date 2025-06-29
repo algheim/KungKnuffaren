@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bitboard.h"
+#include "evaluate.h"
 
 Move read_move();
 Move parse_move(char* string);
@@ -34,8 +35,10 @@ int main(void) {
 
     printf("Output FEN: %s\n", out_fen);
 
-    uint32_t count = move_generation_test(board, attack_table, 4);
-    printf("Count: %d\n", count);
+    printf("Move score: %d\n", evaluate_board(board));
+
+    //uint32_t count = move_generation_test(board, attack_table, 4);
+    //printf("Count: %d\n", count);
 
     board_destroy(board);
     attack_table_destroy(attack_table);
