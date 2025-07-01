@@ -24,6 +24,8 @@ uint64_t get_queen_moves(uint64_t friendly_pieces, uint64_t enemy_pieces, uint64
 uint64_t get_king_moves(uint64_t friendly_pieces, uint64_t attacks);
 uint64_t get_white_pawn_moves(Board* board, AttackTable* attack_table, int from_index);
 uint64_t get_black_pawn_moves(Board* board, AttackTable* attack_table, int from_index);
+uint64_t get_white_pawn_attacks(Board* board, AttackTable* attack_table, int from_index);
+uint64_t get_black_pawn_attacks(Board* board, AttackTable* attack_table, int from_index);
 
 uint64_t get_pinned_pieces(Board* board, int king_index, AttackTable* attack_table);
 uint64_t get_pinned_msb(uint64_t pieces, Board* board, bool diagonal);
@@ -237,11 +239,11 @@ uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* att
             break;
 
         case WHITE_PAWN:
-            attacks = get_white_pawn_moves(board, attack_table, index);
+            attacks = get_white_pawn_attacks(board, attack_table, index);
             break;
 
         case BLACK_PAWN:
-            attacks = get_black_pawn_moves(board, attack_table, index);
+            attacks = get_black_pawn_attacks(board, attack_table, index);
             break;
 
         default:
@@ -468,7 +470,7 @@ uint64_t get_king_moves(uint64_t friendly_pieces, uint64_t attacks) {
 uint64_t get_white_pawn_moves(Board* board, AttackTable* attack_table, int from_index) {
     uint64_t normal_attacks = attack_table->white_pawn_table[from_index];
     uint64_t attack_attacks = attack_table->white_pawn_attack_table[from_index];
-    uint64_t legal_moves = 0;
+    uint64_t legal_moves = 0ULL;
 
     legal_moves |= normal_attacks & (~(board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]));
     legal_moves |= attack_attacks & (board->bit_boards[BLACK_PIECES]);
@@ -495,6 +497,22 @@ uint64_t get_black_pawn_moves(Board* board, AttackTable* attack_table, int from_
             legal_moves ^= 1ULL << (from_index - 16);
         }
     }
+
+    return legal_moves;
+}
+
+uint64_t get_white_pawn_attacks(Board* board, AttackTable* attack_table, int from_index) {
+    uint64_t attack_attacks = attack_table->white_pawn_attack_table[from_index];
+    uint64_t legal_moves = 0ULL;
+    legal_moves |= attack_attacks & (board->bit_boards[BLACK_PIECES]);
+
+    return legal_moves;
+}
+
+uint64_t get_black_pawn_attacks(Board* board, AttackTable* attack_table, int from_index) {
+    uint64_t attack_attacks = attack_table->black_pawn_attack_table[from_index];
+    uint64_t legal_moves = 0ULL;
+    legal_moves |= attack_attacks & (board->bit_boards[WHITE_PIECES]);
 
     return legal_moves;
 }
