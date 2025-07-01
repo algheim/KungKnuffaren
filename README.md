@@ -2,14 +2,19 @@
 
 Chess bot written in C. Frontend in python using pygame. Far from done.
 
-## To run backend:
-- cd backend
-- make
-- bin/kungknuffaren
+Inspired by Sebastian Lague: https://www.youtube.com/watch?v=U4ogK0MIzqk
 
-## To run frontend:
-- pip install -r requirements.txt
-- cd backend
-- make frontend_lib
-- cd ../frontend
-- python3 main.py
+## Running the Backend
+
+1. `cd backend`
+2. `make`
+3. `bin/kungknuffaren`
+
+
+## Running the frontend
+
+1. `pip install -r requirements.txt`
+2. `cd backend`
+3. `make frontend_lib`
+4. `cd ../frontend`
+5. `python3 main.py`
