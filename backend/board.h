@@ -26,7 +26,9 @@ Board* board_from_fen(char* fen, int size);
 
 char* board_get_fen(Board* board);
 
-int board_evaluate(Board* board);
+int board_evaluate_current(Board* board);
+
+Move board_get_best_move(Board* board, AttackTable* attack_table, int depth);
 
 void board_draw(Board* board);
 
@@ -47,7 +49,7 @@ bool board_get_turn(Board* board);
 
 void board_set_start(Board* board);
 
-void board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
+Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
 
 void board_set_turn(bool turn, Board* board);
 

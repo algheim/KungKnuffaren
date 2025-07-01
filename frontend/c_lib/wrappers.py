@@ -55,7 +55,8 @@ class Move(ctypes.Structure):
         ("to_index", ctypes.c_int),
         ("from_type", ctypes.c_int),
         ("to_type", ctypes.c_int),
-        ("score", ctypes.c_int),
+        ("initial_score", ctypes.c_int),
+        ("evaluation_score", ctypes.c_int),
     ]
 
 
@@ -124,3 +125,9 @@ def board_get_fen_w(chess_lib, board):
 
     fen_ptr = chess_lib.board_get_fen(board)
     return ctypes.string_at(fen_ptr).decode('utf-8')
+
+def board_get_best_move_w(chess_lib, board, attack_table, depth):
+    chess_lib.board_get_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int]
+    chess_lib.board_get_best_move.restype = Move
+
+    return chess_lib.board_get_best_move(board, attack_table, ctypes.c_int(depth))

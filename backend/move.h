@@ -14,6 +14,8 @@
 #include "piece.h"
 #include <stdbool.h>
 
+#define EVAL_UNDEFINED 9999999
+
 typedef struct move {
     // To be removed:
     int from_x;
@@ -25,7 +27,8 @@ typedef struct move {
     int to_index;
     int from_type;
     int to_type;
-    int score;
+    int initial_score;
+    int evaluation_score;
 } Move;
 
 

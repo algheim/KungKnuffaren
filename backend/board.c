@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "fenparser.h"
 #include "evaluate.h"
+#include "search.h"
 
 #define WHITE_CASTLE_QUEEN (1 << 0) // 0001
 #define WHITE_CASTLE_KING  (1 << 1) // 0010
@@ -36,8 +37,12 @@ char* board_get_fen(Board* board) {
     return board_to_fen(board);
 }
 
-int board_evaluate(Board* board) {
+int board_evaluate_current(Board* board) {
     return evaluate_board(board);
+}
+
+Move board_get_best_move(Board* board, AttackTable* attack_table, int depth) {
+    return search_best_move(board, attack_table, depth);
 }
 
 bool board_get_turn(Board* board) {
@@ -180,8 +185,8 @@ void board_set_piece(int index, PieceType new_type, Board* board) {
     }
 }
 
-void board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
-    get_legal_moves(board, attack_table, move_count);
+Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
+    return get_legal_moves(board, attack_table, move_count);
 }
 
 void board_change_turn(Board* board) {

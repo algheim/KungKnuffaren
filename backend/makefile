@@ -16,7 +16,8 @@ OBJS = \
     $(OBJ_PATH)move.o \
     $(OBJ_PATH)bitboard.o \
 	$(OBJ_PATH)fenparser.o \
-	$(OBJ_PATH)evaluate.o
+	$(OBJ_PATH)evaluate.o \
+	$(OBJ_PATH)search.o \
 
 # Default target
 backend: $(BIN_PATH)kungknuffaren

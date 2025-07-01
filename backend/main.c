@@ -35,10 +35,13 @@ int main(void) {
 
     printf("Output FEN: %s\n", out_fen);
 
-    printf("Move score: %d\n", evaluate_board(board));
+    Move best_move = board_get_best_move(board, attack_table, 4);
 
-    //uint32_t count = move_generation_test(board, attack_table, 4);
-    //printf("Count: %d\n", count);
+    move_print(best_move);
+    
+
+    uint32_t count = move_generation_test(board, attack_table, 2);
+    printf("Count: %d\n", count);
 
     board_destroy(board);
     attack_table_destroy(attack_table);
@@ -101,13 +104,3 @@ Move parse_move(char* string) {
 
     return move;
 } 
-
-void print_move(Move move) {
-    printf("------ Move ------ \n");
-    printf("from_x = %d\n", move.from_x);
-    printf("from_y = %d\n", move.from_y);
-    printf("to_x = %d\n", move.to_x);
-    printf("to_y = %d\n", move.to_y);
-    printf("score: %d\n", move.score);
-    printf("------------------ \n");
-}
