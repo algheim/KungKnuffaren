@@ -82,25 +82,3 @@ void print_legal_moves(Move* moves) {
     }
 }
 
-
-Move read_move() {
-    printf("Make a move: ");
-    char input_string[5];
-
-    fgets(input_string, 5, stdin);
-
-    printf("%s\n", input_string);
-
-    return parse_move(input_string);
-}
-
-Move parse_move(char* string) {
-    Move move = {};
-
-    move.from_x = string[0] - 'a';
-    move.from_y = 8 - (string[1] - '0');
-    move.to_x = string[2] - 'a';
-    move.to_y = 8 - (string[3] - '0');
-
-    return move;
-} 

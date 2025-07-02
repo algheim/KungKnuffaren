@@ -24,6 +24,7 @@ class Board(ctypes.Structure):
         ("bit_boards", ctypes.c_uint64 * 14),
         ("en_pessant_board", ctypes.c_uint64),
         ("turn", ctypes.c_bool),
+        ("castling_rights", ctypes.c_char),
     ]
 
     def __repr__(self):
@@ -47,16 +48,17 @@ class AttackTable(ctypes.Structure):
 
 class Move(ctypes.Structure):
     _fields_ = [
-        ("from_x", ctypes.c_int),
-        ("from_y", ctypes.c_int),
-        ("to_x", ctypes.c_int),
-        ("to_y", ctypes.c_int),
         ("from_index", ctypes.c_int),
         ("to_index", ctypes.c_int),
         ("from_type", ctypes.c_int),
         ("to_type", ctypes.c_int),
         ("initial_score", ctypes.c_int),
         ("evaluation_score", ctypes.c_int),
+        ("queen_promotion", ctypes.c_bool),
+        ("rook_promotion", ctypes.c_bool),
+        ("knight_promotion", ctypes.c_bool),
+        ("bishop_promotion", ctypes.c_bool),
+        ("move_castle", ctypes.c_char),
     ]
 
 
@@ -93,6 +95,12 @@ def board_make_move(chess_lib, move, board):
 
     chess_lib.board_make_move(move, board)
 
+def board_unmake_move(chess_lib, move, board):
+    chess_lib.board_make_move.argtypes = [Move, ctypes.POINTER(Board)]
+    chess_lib.board_make_move.restype = None
+
+    chess_lib.board_unmake_move(move, board)
+
 
 def attack_table_create_w(chess_lib):
     chess_lib.attack_table_create.argtypes = []
@@ -117,7 +125,6 @@ def board_from_fen_w(chess_lib, fen):
     chess_lib.board_from_fen.restype = ctypes.POINTER(Board)
 
     return chess_lib.board_from_fen(fen, ctypes.c_int(len(fen) + 1))
-
 
 def board_get_fen_w(chess_lib, board):
     chess_lib.board_get_fen.argtypes = [ctypes.POINTER(Board)]

@@ -13,6 +13,8 @@
 
 /* -------------------- Internal function declarations --------------------- */
 void print_piece(PieceType piece_type);
+void make_castle_move(Move move, Board* board);
+void unmake_castle_move(Move move, Board* board);
 
 /* -------------------------- External functions --------------------------- */
 
@@ -70,6 +72,11 @@ void board_draw(Board* board) {
 }
 
 void board_make_move(Move move, Board* board) {
+    if (move_castle(move) != MOVE_CASTLE_NONE) {
+        make_castle_move(move, board);
+        return;
+    }
+
     PieceType piece_type = board_get_piece(move.from_index, board);
     switch(piece_type) {
         case WHITE_KING:
@@ -107,8 +114,12 @@ void board_make_move(Move move, Board* board) {
 }
 
 void board_unmake_move(Move move, Board* board) {
-    PieceType piece_type = board_get_piece(move.to_index, board);
-    board_set_piece(move.from_index, piece_type, board);
+    if (move_castle(move) != MOVE_CASTLE_NONE) {
+        unmake_castle_move(move, board);
+        return;
+    }
+    //printf("Unmaking move from type: %d, to type %d\n", move.from_type, move.to_type);
+    board_set_piece(move.from_index, move.from_type, board);
     board_set_piece(move.to_index, move.to_type, board);
 }
 
@@ -285,6 +296,83 @@ void board_destroy(Board* board) {
 }
 
 /* -------------------------- Internal functions --------------------------- */
+
+void make_castle_move(Move move, Board* board) {
+    switch (move_castle(move)) {
+        case MOVE_CASTLE_WHITE_KING:
+            board_set_castling_rights('w', false, board);
+            board_set_piece(4, -1, board);
+            board_set_piece(7, -1, board);
+            board_set_piece(6, WHITE_KING, board);
+            board_set_piece(5, WHITE_ROOK, board);
+            break;
+
+        case MOVE_CASTLE_WHITE_QUEEN:
+            board_set_castling_rights('w', false, board);
+            board_set_piece(4, -1, board);
+            board_set_piece(0, -1, board);
+            board_set_piece(2, WHITE_KING, board);
+            board_set_piece(3, WHITE_ROOK, board);
+            break;
+
+        case MOVE_CASTLE_BLACK_KING:
+            board_set_castling_rights('b', false, board);
+            board_set_piece(60, -1, board);
+            board_set_piece(63, -1, board);
+            board_set_piece(62, BLACK_KING, board);
+            board_set_piece(61, BLACK_ROOK, board);
+            break;
+
+        case MOVE_CASTLE_BLACK_QUEEN:
+            board_set_castling_rights('b', false, board);
+            board_set_piece(60, -1, board);
+            board_set_piece(56, -1, board);
+            board_set_piece(58, BLACK_KING, board);
+            board_set_piece(59, BLACK_ROOK, board);
+            break;
+
+        default:
+            break;
+    }
+}
+
+void unmake_castle_move(Move move, Board* board) {
+    switch (move_castle(move)) {
+        case MOVE_CASTLE_WHITE_KING:
+            board_set_castling_rights('w', true, board);
+            board_set_piece(6, -1, board);
+            board_set_piece(5, -1, board);
+            board_set_piece(4, WHITE_KING, board);
+            board_set_piece(7, WHITE_ROOK, board);
+            break;
+
+        case MOVE_CASTLE_WHITE_QUEEN:
+            board_set_castling_rights('w', true, board);
+            board_set_piece(2, -1, board);
+            board_set_piece(3, -1, board);
+            board_set_piece(4, WHITE_KING, board);
+            board_set_piece(0, WHITE_ROOK, board);
+            break;
+
+        case MOVE_CASTLE_BLACK_KING:
+            board_set_castling_rights('b', true, board);
+            board_set_piece(62, -1, board);
+            board_set_piece(61, -1, board);
+            board_set_piece(60, BLACK_KING, board);
+            board_set_piece(63, BLACK_ROOK, board);
+            break;
+
+        case MOVE_CASTLE_BLACK_QUEEN:
+            board_set_castling_rights('b', true, board);
+            board_set_piece(58, -1, board);
+            board_set_piece(59, -1, board);
+            board_set_piece(60, BLACK_KING, board);
+            board_set_piece(56, BLACK_ROOK, board);
+            break;
+    }
+}
+
+
 
 void print_piece(PieceType piece_type) {
     switch(piece_type) {

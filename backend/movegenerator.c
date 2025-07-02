@@ -31,6 +31,7 @@ uint64_t get_pinned_pieces(Board* board, int king_index, AttackTable* attack_tab
 uint64_t get_pinned_msb(uint64_t pieces, Board* board, bool diagonal);
 uint64_t get_pinned_lsb(uint64_t pieces, Board* board, bool diagonal);
 
+void add_castle_moves(Board* board, Move* legal_moves, int* move_count, uint64_t attacked_squares);
 uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* attack_table);
 uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_table, uint64_t* all_attacks);
 void get_moves_from_index(int from_index, uint64_t attacks, Move* moves, int* current_index, Board* board);
@@ -41,6 +42,12 @@ void get_moves_from_bit_board(Board* board,
                               uint64_t pinned_pieces,
                               uint64_t squares_blocking_king,
                               int king_index);
+
+#define WHITE_KINGSIDE_CASTLE_SAFE ((1ULL << 5) | (1ULL << 6))
+#define WHITE_QUEENSIDE_CASTLE_SAFE ((1ULL << 2) | (1ULL << 3))
+#define BLACK_KINGSIDE_CASTLE_SAFE ((1ULL << 61) | (1ULL << 62))
+#define BLACK_QUEENSIDE_CASTLE_SAFE ((1ULL << 58) | (1ULL << 59))
+
 
 /* -------------------------- External functions ----------------------------*/
 
@@ -78,6 +85,9 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
         squares_blocking_king = bit_board_from_to(king_index, attacker_index);
         squares_blocking_king |= (1ULL << attacker_index);
     }
+    else {
+        add_castle_moves(board, legal_moves, move_count, attacked_squares);
+    }
 
     // Regular moves
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
@@ -88,6 +98,32 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
 }
 
 /* -------------------------- Internal functions ----------------------------*/
+
+void add_castle_moves(Board* board, Move* legal_moves, int* move_count, uint64_t attacked_squares) {
+    if (board->turn) {
+        if (board_white_can_castle_king(board) && !(attacked_squares & WHITE_KINGSIDE_CASTLE_SAFE)
+            && !(WHITE_KINGSIDE_CASTLE_SAFE & board->bit_boards[WHITE_PIECES])) {
+            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_WHITE_KING);
+        }
+
+        if (board_white_can_castle_queen(board) && !(attacked_squares & WHITE_QUEENSIDE_CASTLE_SAFE)
+            && !(WHITE_QUEENSIDE_CASTLE_SAFE & board->bit_boards[WHITE_PIECES])) {
+            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_WHITE_QUEEN);
+        }
+
+    } 
+    else {
+        if (board_black_can_castle_king(board) && !(attacked_squares & BLACK_KINGSIDE_CASTLE_SAFE)
+            && !(BLACK_KINGSIDE_CASTLE_SAFE & board->bit_boards[BLACK_PIECES])) {
+            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_BLACK_KING);
+        }
+
+        if (board_black_can_castle_queen(board) && !(attacked_squares & BLACK_QUEENSIDE_CASTLE_SAFE)
+            && !(BLACK_QUEENSIDE_CASTLE_SAFE & board->bit_boards[BLACK_PIECES])) {
+            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_BLACK_QUEEN);
+        }
+    }
+}
 
 
 void get_moves_from_bit_board(Board* board, 

@@ -15,8 +15,8 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth) {
 
         int score = -min_max(board, attack_table, depth);
 
-        board_unmake_move(legal_moves[i], board);
         board_change_turn(board);
+        board_unmake_move(legal_moves[i], board);
         
         if (score > best_score) {
             best_score = score;

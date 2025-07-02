@@ -3,6 +3,7 @@ import pygame as p
 from button import Button
 import os
 from c_lib import wrappers
+import time
 
 SCREEN_HEIGHT = 600
 SCREEN_LENGTH = 600
@@ -37,26 +38,34 @@ class Gui:
         self.active_square = None
         self.marked_squares = set()
         self.square_size = min(SCREEN_LENGTH, SCREEN_HEIGHT) / 8
+        self.move_stack = []
 
     def update_board(self, board, attack_table):
-        legal_moves, move_count = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
+        legal_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
         wrappers.board_change_turn(self.chess_lib, board)
         legal_opponent_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
         wrappers.board_change_turn(self.chess_lib, board)
 
-
-        legal_moves.extend(legal_opponent_moves)
+        #legal_moves.extend(legal_opponent_moves)
 
         self.marked_squares = set()
 
         if self.prev_active_square != None and self.active_square != None:
             from_index = self.prev_active_square
             to_index = self.active_square
-            move = wrappers.Move()
-            move.from_index = from_index
-            move.to_index = to_index
-            wrappers.board_make_move(self.chess_lib, move, board)
-            wrappers.board_change_turn(self.chess_lib, board)
+            for legal_move in legal_moves:
+                if (from_index == legal_move.from_index and to_index == legal_move.to_index):
+                    wrappers.board_make_move(self.chess_lib, legal_move, board)
+                    wrappers.board_change_turn(self.chess_lib, board)
+                    self.move_stack.append(legal_move)
+                    break
+            else:
+                move = wrappers.Move()
+                move.from_index = from_index
+                move.to_index = to_index
+                wrappers.board_make_move(self.chess_lib, move, board)
+                wrappers.board_change_turn(self.chess_lib, board)
+                self.move_stack.append(move)
 
             self.active_square = None
             self.prev_active_square = None
@@ -67,6 +76,23 @@ class Gui:
             for move in legal_moves:
                 if move.from_index == from_index:
                     self.marked_squares.add(move.to_index)
+
+    def update_pop_push_move(self, board):
+        if self.event is None:
+            return False
+
+        if self.event.type == p.KEYDOWN:
+            if self.event.key == p.K_LEFT:
+                if len(self.move_stack) == 0:
+                    return False
+
+                move = self.move_stack.pop()
+                wrappers.board_unmake_move(self.chess_lib, move, board)
+                wrappers.board_change_turn(self.chess_lib, board)
+                return True
+
+        return False
+
 
     def draw_board(self):
         self.win.fill((0, 0, 0))
@@ -98,11 +124,11 @@ class Gui:
                 p.quit()
                 quit()
 
-            if event.type == p.MOUSEBUTTONDOWN:
+            if event.type == p.MOUSEBUTTONDOWN or event.type == p.KEYDOWN:
                 self.event = event
 
     def update_active_square(self):
-        if self.event == None:
+        if self.event == None or self.event.type != p.MOUSEBUTTONDOWN:
             return False
         
         for i in range(64):
@@ -113,7 +139,7 @@ class Gui:
                 else:
                     self.prev_active_square = self.active_square
                     self.active_square = i
-                    print("Active square:", self.active_square)
+                    #print("Active square:", self.active_square)
                 return True
         return False
     
