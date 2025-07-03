@@ -16,44 +16,29 @@
 
 #define EVAL_UNDEFINED 9999999
 
-#define MOVE_CASTLE_NONE 0
-#define MOVE_CASTLE_WHITE_KING 1
-#define MOVE_CASTLE_WHITE_QUEEN 2
-#define MOVE_CASTLE_BLACK_KING 3
-#define MOVE_CASTLE_BLACK_QUEEN 4
+typedef enum {
+    NORMAL_MOVE_FLAG = 0,
+    EN_PASSANT_FLAG = 1,
+    EN_PASSANT_AVAILABLE_FLAG = 2,
+    QUEEN_PROMOTION_FLAG = 3,
+    ROOK_PROMOTION_FLAG = 4,
+    BISHOP_PROMOTION_FLAG = 5,
+    KNIGHT_PROMOTION_FLAG = 6,
+    CASTLE_FLAG = 7,
+} MoveFlag;
 
-// xxxxxxxx xxxxxxxx xxxxtttt ttiiiiii
-
-typedef struct move {
-    int from_index;
-    int to_index;
-    int from_type;
-    int to_type;
-    int initial_score;
-    int evaluation_score;
-    bool queen_promotion;
-    bool rook_promotion;
-    bool knigh_promotion;
-    bool bishop_promotion;
-    char castle;
-} Move;
-
-PieceType move_get_from_type(Move move);
-
-PieceType move_get_to_type(Move move);
+typedef uint16_t Move;
 
 int move_get_from_index(Move move);
 
+MoveFlag move_get_flag(Move move);
+
 int move_get_to_index(Move move);
 
-Move move_create(int from_index, int to_index, PieceType piece, PieceType capture);
+Move move_create(int from_index, int to_index, int flag);
 
 bool move_exists(Move move);
 
 void move_print(Move move);
-
-int move_castle(Move move);
-
-Move move_create_castle(int castle);
 
 #endif

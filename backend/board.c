@@ -11,11 +11,15 @@
 #define BLACK_CASTLE_QUEEN (1 << 2) // 0100
 #define BLACK_CASTLE_KING  (1 << 3) // 1000
 
+#define UNDO_STACK_START_CAPACITY 30
+
+
 /* -------------------- Internal function declarations --------------------- */
 void print_piece(PieceType piece_type);
 void make_castle_move(Move move, Board* board);
 void unmake_castle_move(Move move, Board* board);
-
+void undo_stack_push(Move move, Board* board);
+UndoNode undo_stack_pop(Board* board);
 /* -------------------------- External functions --------------------------- */
 
 Board* board_create() {
@@ -25,8 +29,11 @@ Board* board_create() {
         board->bit_boards[i] = 0ULL;
     }
     board->turn = true;
-    board->en_pessant_board = 0ULL;
+    board->en_passant_index = -1;
     board->castling_rights = 0x0F;
+    board->undo_stack = calloc(UNDO_STACK_START_CAPACITY, sizeof(UndoNode));
+    board->undo_stack_capacity = UNDO_STACK_START_CAPACITY;
+    board->undo_stack_size = 0;
 
     return board;
 }
@@ -71,13 +78,17 @@ void board_draw(Board* board) {
     printf("   a b c d e f g h \n");
 }
 
-void board_make_move(Move move, Board* board) {
-    if (move_castle(move) != MOVE_CASTLE_NONE) {
+void board_push_move(Move move, Board* board) {
+    undo_stack_push(move, board);
+
+    if (move_get_flag(move) == CASTLE_FLAG) {
         make_castle_move(move, board);
         return;
     }
 
-    PieceType piece_type = board_get_piece(move.from_index, board);
+    int from_index = move_get_from_index(move);
+
+    PieceType piece_type = board_get_piece(from_index, board);
     switch(piece_type) {
         case WHITE_KING:
             board->castling_rights &= ~(WHITE_CASTLE_KING | WHITE_CASTLE_QUEEN);
@@ -88,19 +99,19 @@ void board_make_move(Move move, Board* board) {
             break;
 
         case WHITE_ROOK:
-            if (move.from_index == 0) {
+            if (from_index == 0) {
                 board->castling_rights &= ~WHITE_CASTLE_QUEEN;
             }
-            if (move.from_index == 7) {
+            if (from_index == 7) {
                 board->castling_rights &= ~WHITE_CASTLE_KING;
             }
             break;
 
         case BLACK_ROOK:
-            if (move.from_index == 56) {
+            if (from_index == 56) {
                 board->castling_rights &= ~BLACK_CASTLE_QUEEN;
             }
-            if (move.from_index == 63) {
+            if (from_index == 63) {
                 board->castling_rights &= ~BLACK_CASTLE_KING;
             }
             break;
@@ -109,18 +120,29 @@ void board_make_move(Move move, Board* board) {
             break;
     }
 
-    board_set_piece(move.to_index, piece_type, board);
-    board_set_piece(move.from_index, -1, board);
+    board_set_piece(move_get_to_index(move), piece_type, board);
+    board_set_piece(from_index, -1, board);
 }
 
-void board_unmake_move(Move move, Board* board) {
-    if (move_castle(move) != MOVE_CASTLE_NONE) {
-        unmake_castle_move(move, board);
-        return;
+Move board_pop_move(Board* board) {
+    if (board->undo_stack_size <= 0) {
+        return move_create(0, 0, 0);
     }
-    //printf("Unmaking move from type: %d, to type %d\n", move.from_type, move.to_type);
-    board_set_piece(move.from_index, move.from_type, board);
-    board_set_piece(move.to_index, move.to_type, board);
+    UndoNode node = undo_stack_pop(board);
+    Move move = node.move;
+
+    board->castling_rights = node.castling_rights;
+    board->en_passant_index = node.en_passant_index;
+    
+    if (move_get_flag(move) == CASTLE_FLAG) {
+        unmake_castle_move(move, board);
+        return move;
+    }
+    printf("from_index: %d to_index: %d move_piece: %d, captured_piece: %d\n", move_get_flag(move), move_get_to_index(move), node.move_piece, node.captured_piece);
+    board_set_piece(move_get_from_index(move), node.move_piece, board);
+    board_set_piece(move_get_to_index(move), node.captured_piece, board);
+
+    return move;
 }
 
 PieceType board_get_piece(int index, Board* board) {
@@ -298,32 +320,34 @@ void board_destroy(Board* board) {
 /* -------------------------- Internal functions --------------------------- */
 
 void make_castle_move(Move move, Board* board) {
-    switch (move_castle(move)) {
-        case MOVE_CASTLE_WHITE_KING:
+    int to_index = move_get_to_index(move);
+    switch (to_index) {
+        // White king castle
+        case 6:
             board_set_castling_rights('w', false, board);
             board_set_piece(4, -1, board);
             board_set_piece(7, -1, board);
             board_set_piece(6, WHITE_KING, board);
             board_set_piece(5, WHITE_ROOK, board);
             break;
-
-        case MOVE_CASTLE_WHITE_QUEEN:
+        // White queen castle
+        case 2:
             board_set_castling_rights('w', false, board);
             board_set_piece(4, -1, board);
             board_set_piece(0, -1, board);
             board_set_piece(2, WHITE_KING, board);
             board_set_piece(3, WHITE_ROOK, board);
             break;
-
-        case MOVE_CASTLE_BLACK_KING:
+        // Black king castle
+        case 62:
             board_set_castling_rights('b', false, board);
             board_set_piece(60, -1, board);
             board_set_piece(63, -1, board);
             board_set_piece(62, BLACK_KING, board);
             board_set_piece(61, BLACK_ROOK, board);
             break;
-
-        case MOVE_CASTLE_BLACK_QUEEN:
+        // Black queen castle
+        case 58:
             board_set_castling_rights('b', false, board);
             board_set_piece(60, -1, board);
             board_set_piece(56, -1, board);
@@ -337,32 +361,34 @@ void make_castle_move(Move move, Board* board) {
 }
 
 void unmake_castle_move(Move move, Board* board) {
-    switch (move_castle(move)) {
-        case MOVE_CASTLE_WHITE_KING:
+    int to_index = move_get_to_index(move);
+    switch (to_index) {
+        // White king castle
+        case 6:
             board_set_castling_rights('w', true, board);
             board_set_piece(6, -1, board);
             board_set_piece(5, -1, board);
             board_set_piece(4, WHITE_KING, board);
             board_set_piece(7, WHITE_ROOK, board);
             break;
-
-        case MOVE_CASTLE_WHITE_QUEEN:
+        // White queen castle
+        case 2:
             board_set_castling_rights('w', true, board);
             board_set_piece(2, -1, board);
             board_set_piece(3, -1, board);
             board_set_piece(4, WHITE_KING, board);
             board_set_piece(0, WHITE_ROOK, board);
             break;
-
-        case MOVE_CASTLE_BLACK_KING:
+        // Black king castle
+        case 62:
             board_set_castling_rights('b', true, board);
             board_set_piece(62, -1, board);
             board_set_piece(61, -1, board);
             board_set_piece(60, BLACK_KING, board);
             board_set_piece(63, BLACK_ROOK, board);
             break;
-
-        case MOVE_CASTLE_BLACK_QUEEN:
+        // Black queen castle
+        case 58:
             board_set_castling_rights('b', true, board);
             board_set_piece(58, -1, board);
             board_set_piece(59, -1, board);
@@ -371,7 +397,6 @@ void unmake_castle_move(Move move, Board* board) {
             break;
     }
 }
-
 
 
 void print_piece(PieceType piece_type) {
@@ -418,5 +443,25 @@ void print_piece(PieceType piece_type) {
             printf(".");
             break;
     }
+}
+
+void undo_stack_push(Move move, Board* board) {
+    UndoNode new_node;
+    new_node.captured_piece = (int8_t) board_get_piece(move_get_to_index(move), board);
+    new_node.move_piece = (int8_t) board_get_piece(move_get_from_index(move), board);
+    new_node.move = move;
+    new_node.castling_rights = board->castling_rights;
+    new_node.en_passant_index = 0;
+
+    if (board->undo_stack_size == board->undo_stack_capacity) {
+        board->undo_stack_capacity *= 2;
+        board->undo_stack = realloc(board->undo_stack, board->undo_stack_capacity * sizeof(UndoNode));
+    }
+
+    board->undo_stack[(board->undo_stack_size)++] = new_node;
+}
+
+UndoNode undo_stack_pop(Board* board) {
+    return board->undo_stack[--(board->undo_stack_size)];
 }
 

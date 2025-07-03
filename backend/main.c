@@ -49,7 +49,7 @@ int main(void) {
 
 void print_moves(Move* moves, int move_count) {
     for (int i = 0 ; i < move_count ; i++) {
-        printf("from: %d \tto: %d\n", moves[i].from_index, moves[i].to_index);
+        printf("from: %d \tto: %d\n", move_get_from_index(moves[i]), move_get_to_index(moves[i]));
     }
 }
 
@@ -63,10 +63,10 @@ uint32_t move_generation_test(Board* board, AttackTable* attack_table, int depth
     uint32_t total_moves = 0;
 
     for (int i = 0 ; i < move_count ; i++) {
-        board_make_move(moves[i], board);
+        board_push_move(moves[i], board);
         board_change_turn(board);
         total_moves += move_generation_test(board, attack_table, depth - 1);
-        board_unmake_move(moves[i], board);
+        board_pop_move(board);
         board_change_turn(board);
     }
 

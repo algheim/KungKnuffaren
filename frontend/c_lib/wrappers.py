@@ -46,22 +46,6 @@ class AttackTable(ctypes.Structure):
     ]
 
 
-class Move(ctypes.Structure):
-    _fields_ = [
-        ("from_index", ctypes.c_int),
-        ("to_index", ctypes.c_int),
-        ("from_type", ctypes.c_int),
-        ("to_type", ctypes.c_int),
-        ("initial_score", ctypes.c_int),
-        ("evaluation_score", ctypes.c_int),
-        ("queen_promotion", ctypes.c_bool),
-        ("rook_promotion", ctypes.c_bool),
-        ("knight_promotion", ctypes.c_bool),
-        ("bishop_promotion", ctypes.c_bool),
-        ("move_castle", ctypes.c_char),
-    ]
-
-
 def board_create_w(chess_lib):
     chess_lib.board_create.argtypes = []
     chess_lib.board_create.restype = ctypes.POINTER(Board)
@@ -89,30 +73,22 @@ def board_change_turn(chess_lib, board):
     chess_lib.board_change_turn(board)
 
 
-def board_make_move(chess_lib, move, board):
-    chess_lib.board_make_move.argtypes = [Move, ctypes.POINTER(Board)]
-    chess_lib.board_make_move.restype = None
+def board_push_move(chess_lib, move, board):
+    chess_lib.board_push_move.argtypes = [ctypes.c_uint16, ctypes.POINTER(Board)]
+    chess_lib.board_push_move.restype = None
 
-    chess_lib.board_make_move(move, board)
+    chess_lib.board_push_move(move, board)
 
-def board_unmake_move(chess_lib, move, board):
-    chess_lib.board_make_move.argtypes = [Move, ctypes.POINTER(Board)]
-    chess_lib.board_make_move.restype = None
+def board_pop_move(chess_lib, board):
+    chess_lib.board_pop_move.argtypes = [ctypes.POINTER(Board)]
+    chess_lib.board_pop_move.restype = ctypes.c_uint16
 
-    chess_lib.board_unmake_move(move, board)
-
-
-def attack_table_create_w(chess_lib):
-    chess_lib.attack_table_create.argtypes = []
-    chess_lib.attack_table_create.restype = ctypes.POINTER(AttackTable)
-
-    attack_table = chess_lib.attack_table_create()
-    return attack_table
+    return chess_lib.board_pop_move(board)
 
 
 def get_legal_moves_w(chess_lib, board, attack_table):
     chess_lib.get_legal_moves.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.POINTER(ctypes.c_int)]
-    chess_lib.get_legal_moves.restype = ctypes.POINTER(Move)
+    chess_lib.get_legal_moves.restype = ctypes.POINTER(ctypes.c_uint16)
 
     move_count = ctypes.c_int(0)
     legal_moves = chess_lib.get_legal_moves(board, attack_table, ctypes.pointer(move_count))
@@ -135,6 +111,34 @@ def board_get_fen_w(chess_lib, board):
 
 def board_get_best_move_w(chess_lib, board, attack_table, depth):
     chess_lib.board_get_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int]
-    chess_lib.board_get_best_move.restype = Move
+    chess_lib.board_get_best_move.restype = ctypes.c_uint16
 
     return chess_lib.board_get_best_move(board, attack_table, ctypes.c_int(depth))
+
+def attack_table_create_w(chess_lib):
+    chess_lib.attack_table_create.argtypes = []
+    chess_lib.attack_table_create.restype = ctypes.POINTER(AttackTable)
+
+    attack_table = chess_lib.attack_table_create()
+    return attack_table
+
+# ------------------------------ Moves --------------------------------------
+
+def move_get_from_index(chess_lib, move):
+    chess_lib.move_get_from_index.argtypes = [ctypes.c_uint16]
+    chess_lib.move_get_from_index.restype = ctypes.c_int
+
+    return chess_lib.move_get_from_index(move)
+
+def move_get_to_index(chess_lib, move):
+    chess_lib.move_get_to_index.argtypes = [ctypes.c_uint16]
+    chess_lib.move_get_to_index.restype = ctypes.c_int
+
+    return chess_lib.move_get_to_index(move)
+
+def move_create(chess_lib, from_index, to_index, flag):
+    chess_lib.move_create.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    chess_lib.move_create.restype = ctypes.c_uint16
+
+    return chess_lib.move_create(ctypes.c_int(from_index), ctypes.c_int(to_index), ctypes.c_int(flag))
+

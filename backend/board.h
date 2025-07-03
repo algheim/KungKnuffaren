@@ -10,13 +10,23 @@
 #define BIT_BOARD_COUNT 14
 
 
+typedef struct {
+    Move move;
+    int8_t en_passant_index;
+    int8_t move_piece;
+    int8_t captured_piece;
+    uint8_t castling_rights;
+} UndoNode;
 
 // a1 maps to the least significant bit and h8 maps to the most significant bit
 typedef struct board {
     uint64_t bit_boards[14];
-    uint64_t en_pessant_board;
+    uint8_t en_passant_index;
     bool turn;
-    char castling_rights;
+    uint8_t castling_rights;
+    UndoNode* undo_stack;
+    int undo_stack_size;
+    int undo_stack_capacity;
 } Board;
 
 
@@ -32,9 +42,9 @@ Move board_get_best_move(Board* board, AttackTable* attack_table, int depth);
 
 void board_draw(Board* board);
 
-void board_make_move(Move move, Board* board);
+void board_push_move(Move move, Board* board);
 
-void board_unmake_move(Move move, Board* board);
+Move board_pop_move(Board* board);
 
 void board_set_piece(int index, PieceType type, Board* board);
 

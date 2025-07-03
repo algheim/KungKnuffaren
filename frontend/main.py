@@ -35,7 +35,7 @@ def main():
 
                 time.sleep(2)
 
-                wrappers.board_make_move(chess_lib, best_move, board)
+                wrappers.board_push_move(chess_lib, best_move, board)
 
                 wrappers.board_change_turn(chess_lib, board)
 

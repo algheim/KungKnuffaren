@@ -30,6 +30,7 @@ uint64_t get_black_pawn_attacks(Board* board, AttackTable* attack_table, int fro
 uint64_t get_pinned_pieces(Board* board, int king_index, AttackTable* attack_table);
 uint64_t get_pinned_msb(uint64_t pieces, Board* board, bool diagonal);
 uint64_t get_pinned_lsb(uint64_t pieces, Board* board, bool diagonal);
+int get_flag(PieceType piece, int from_index, int to_index);
 
 void add_castle_moves(Board* board, Move* legal_moves, int* move_count, uint64_t attacked_squares);
 uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* attack_table);
@@ -103,24 +104,24 @@ void add_castle_moves(Board* board, Move* legal_moves, int* move_count, uint64_t
     if (board->turn) {
         if (board_white_can_castle_king(board) && !(attacked_squares & WHITE_KINGSIDE_CASTLE_SAFE)
             && !(WHITE_KINGSIDE_CASTLE_SAFE & board->bit_boards[WHITE_PIECES])) {
-            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_WHITE_KING);
+            legal_moves[(*move_count)++] = move_create(4, 6, CASTLE_FLAG);
         }
 
         if (board_white_can_castle_queen(board) && !(attacked_squares & WHITE_QUEENSIDE_CASTLE_SAFE)
             && !(WHITE_QUEENSIDE_CASTLE_SAFE & board->bit_boards[WHITE_PIECES])) {
-            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_WHITE_QUEEN);
+            legal_moves[(*move_count)++] = move_create(4, 2, CASTLE_FLAG);
         }
 
     } 
     else {
         if (board_black_can_castle_king(board) && !(attacked_squares & BLACK_KINGSIDE_CASTLE_SAFE)
             && !(BLACK_KINGSIDE_CASTLE_SAFE & board->bit_boards[BLACK_PIECES])) {
-            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_BLACK_KING);
+            legal_moves[(*move_count)++] = move_create(60, 62, CASTLE_FLAG);
         }
 
         if (board_black_can_castle_queen(board) && !(attacked_squares & BLACK_QUEENSIDE_CASTLE_SAFE)
             && !(BLACK_QUEENSIDE_CASTLE_SAFE & board->bit_boards[BLACK_PIECES])) {
-            legal_moves[(*move_count)++] = move_create_castle(MOVE_CASTLE_BLACK_QUEEN);
+            legal_moves[(*move_count)++] = move_create(60, 58, CASTLE_FLAG);
         }
     }
 }
@@ -204,13 +205,37 @@ void get_moves_from_index(int from_index, uint64_t attacks, Move* moves, int* cu
         int to_index = __builtin_ctzll(attacks);
         attacks &= attacks - 1;
         PieceType from_piece = board_get_piece(from_index, board);
-        PieceType to_piece = board_get_piece(to_index, board);
-        moves[*current_index] = move_create(from_index, to_index, from_piece, to_piece);
 
-        (*current_index)++;
+        int flag = get_flag(from_piece, from_index, to_index);
+        
+        if (flag == QUEEN_PROMOTION_FLAG) {
+            moves[(*current_index)++] = move_create(from_index, to_index, QUEEN_PROMOTION_FLAG);
+            moves[(*current_index)++] = move_create(from_index, to_index, ROOK_PROMOTION_FLAG);
+            moves[(*current_index)++] = move_create(from_index, to_index, BISHOP_PROMOTION_FLAG);
+            moves[(*current_index)++] = move_create(from_index, to_index, KNIGHT_PROMOTION_FLAG);
+        }
+        else {
+            moves[(*current_index)++] = move_create(from_index, to_index, flag);
+        }
     }
 
-    moves[*current_index] = move_create(-1, -1, -1, -1);
+    moves[*current_index] = move_create(0, 0, 0);
+}
+
+int get_flag(PieceType piece, int from_index, int to_index) {
+    if (piece != WHITE_PAWN && piece != BLACK_PAWN) {
+        return NORMAL_MOVE_FLAG;
+    }
+
+    if (abs(from_index - to_index) == 16) {
+        return EN_PASSANT_AVAILABLE_FLAG;
+    }
+
+    if (to_index / 8 == 0 || to_index / 8 == 7) {
+        return QUEEN_PROMOTION_FLAG;
+    }
+
+    return NORMAL_MOVE_FLAG;
 }
 
 
