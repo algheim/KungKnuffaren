@@ -16,6 +16,7 @@
 
 
 /* -------------------- Internal function declarations --------------------- */
+void update_castling_rights(Move move, PieceType piece_type, Board* board);
 void print_piece(PieceType piece_type);
 void make_castle_move(Move move, Board* board);
 void unmake_castle_move(Move move, Board* board);
@@ -86,36 +87,7 @@ void board_push_move(Move move, Board* board) {
     bool turn = board_get_turn(board);
     PieceType piece_type = board_get_piece(from_index, board);
 
-    switch(piece_type) {
-        case WHITE_KING:
-            board->castling_rights &= ~(WHITE_CASTLE_KING | WHITE_CASTLE_QUEEN);
-            break;
-
-        case BLACK_KING:
-            board->castling_rights &= ~(BLACK_CASTLE_KING | BLACK_CASTLE_QUEEN);
-            break;
-
-        case WHITE_ROOK:
-            if (from_index == 0) {
-                board->castling_rights &= ~WHITE_CASTLE_QUEEN;
-            }
-            if (from_index == 7) {
-                board->castling_rights &= ~WHITE_CASTLE_KING;
-            }
-            break;
-
-        case BLACK_ROOK:
-            if (from_index == 56) {
-                board->castling_rights &= ~BLACK_CASTLE_QUEEN;
-            }
-            if (from_index == 63) {
-                board->castling_rights &= ~BLACK_CASTLE_KING;
-            }
-            break;
-
-        default:
-            break;
-    }
+    update_castling_rights(move, piece_type, board);
 
     switch (move_get_flag(move)) {
         case CASTLE_FLAG:
@@ -124,7 +96,7 @@ void board_push_move(Move move, Board* board) {
         case QUEEN_PROMOTION_FLAG:
             board_set_piece(from_index, -1, board);
             board_set_piece(to_index, turn ? WHITE_QUEEN : BLACK_QUEEN, board);
-            printf("from, to, type %d %d %d\n", from_index, to_index, turn ? WHITE_QUEEN : BLACK_QUEEN);
+            //printf("from, to, type %d %d %d\n", from_index, to_index, turn ? WHITE_QUEEN : BLACK_QUEEN);
             //printf("QUEEN PROMOTED! \n");
             return;
         case ROOK_PROMOTION_FLAG:
@@ -339,6 +311,59 @@ void board_destroy(Board* board) {
 }
 
 /* -------------------------- Internal functions --------------------------- */
+
+void update_castling_rights(Move move, PieceType piece_type, Board* board) {
+    int from_index = move_get_from_index(move);
+    int to_index = move_get_to_index(move);
+
+    switch(piece_type) {
+        case WHITE_KING:
+            board->castling_rights &= ~(WHITE_CASTLE_KING | WHITE_CASTLE_QUEEN);
+            break;
+
+        case BLACK_KING:
+            board->castling_rights &= ~(BLACK_CASTLE_KING | BLACK_CASTLE_QUEEN);
+            break;
+
+        case WHITE_ROOK:
+            if (from_index == 0) {
+                board->castling_rights &= ~WHITE_CASTLE_QUEEN;
+            }
+            if (from_index == 7) {
+                board->castling_rights &= ~WHITE_CASTLE_KING;
+            }
+            break;
+
+        case BLACK_ROOK:
+            if (from_index == 56) {
+                board->castling_rights &= ~BLACK_CASTLE_QUEEN;
+            }
+            if (from_index == 63) {
+                board->castling_rights &= ~BLACK_CASTLE_KING;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    switch(to_index) {
+        case 0:
+            board->castling_rights &= ~WHITE_CASTLE_QUEEN;
+            break;
+        case 7:
+            board->castling_rights &= ~WHITE_CASTLE_KING;
+            break;
+        case 56:
+            board->castling_rights &= ~BLACK_CASTLE_QUEEN;
+            break;
+        case 63:
+            board->castling_rights &= ~BLACK_CASTLE_KING;
+            break;
+        default:
+            break;
+    }
+}
 
 void make_castle_move(Move move, Board* board) {
     int to_index = move_get_to_index(move);

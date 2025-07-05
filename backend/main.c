@@ -26,9 +26,16 @@ void print_moves(Move* moves, int move_count);
 int main(void) {
     AttackTable* attack_table = attack_table_create();
     char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
+    fen = "rnbqkbnr/1pppppPp/8/p7/8/8/PPPP1PPP/RNBQKBNR w QKqk - 0 0";
     Board* board = board_from_fen(fen, strlen(fen));
 
+
+    Move mm = move_create(53, 63, QUEEN_PROMOTION_FLAG);
+    board_push_move(mm, board);
+    board_draw(board);
+
+    Move mmm = move_create(8, 56, ROOK_PROMOTION_FLAG);
+    board_push_move(mmm, board);
     board_draw(board);
 
     printf("Castling rights: %d %d\n", board_white_can_castle_king(board), board_white_can_castle_queen(board));
