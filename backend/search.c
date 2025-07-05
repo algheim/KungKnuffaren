@@ -53,7 +53,6 @@ int min_max(Board* board, AttackTable* attack_table, int depth) {
         if (score > best_score) {
             best_score = score;
         }
-
     }
 
     board_change_turn(board);

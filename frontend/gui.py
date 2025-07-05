@@ -25,7 +25,8 @@ BLACK_BISHOP_P = os.path.join("sprites", "bishop-b.svg")
 BLACK_PAWN_P   = os.path.join("sprites", "pawn-b.svg")
 BLACK_QUEEN_P  = os.path.join("sprites", "queen-b.svg")
 
-
+PROMOTION_FLAGS = set([wrappers.MoveFlag.ROOK_PROMOTION_FLAG, wrappers.MoveFlag.QUEEN_PROMOTION_FLAG,
+                      wrappers.MoveFlag.BISHOP_PROMOTION_FLAG, wrappers.MoveFlag.KNIGHT_PROMOTION_FLAG])
 class Gui:
     def __init__(self, chess_lib):
         self.win = p.display.set_mode((SCREEN_LENGTH, SCREEN_HEIGHT))
@@ -37,23 +38,37 @@ class Gui:
         self.active_square = None
         self.marked_squares = set()
         self.square_size = min(SCREEN_LENGTH, SCREEN_HEIGHT) / 8
+        self.display_promotion_options = False
+        self.promotion_buttons = self._get_promotion_buttons()
+        self.promotion = None
 
-    def update_board(self, board, attack_table):
-        legal_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
-        wrappers.board_change_turn(self.chess_lib, board)
-        legal_opponent_moves, _ = wrappers.get_legal_moves_w(self.chess_lib, board, attack_table)
-        wrappers.board_change_turn(self.chess_lib, board)
-
-        #legal_moves.extend(legal_opponent_moves)
-
+    def update_board(self, board, legal_moves):
+        # Make promotion move
+        if self.display_promotion_options:
+            self.update_promotion_buttons()
+            move = wrappers.move_create(self.chess_lib, self.prev_active_square, self.active_square, self.promotion)
+            print(self.promotion)
+            wrappers.board_push_move(self.chess_lib, move, board)
+            wrappers.board_change_turn(self.chess_lib, board)
+            self.display_promotion_options = False
+            self.prev_active_square = None
+            self.active_square = None
+            return
+        
         self.marked_squares = set()
 
+        # Make a move
         if self.prev_active_square != None and self.active_square != None:
             from_index = self.prev_active_square
             to_index = self.active_square
             for legal_move in legal_moves:
                 if (from_index == wrappers.move_get_from_index(self.chess_lib, legal_move) and
                      to_index == wrappers.move_get_to_index(self.chess_lib, legal_move)):
+                    
+                    if wrappers.move_get_flag(self.chess_lib, legal_move) in PROMOTION_FLAGS:
+                        self.display_promotion_options = True
+                        return
+
                     wrappers.board_push_move(self.chess_lib, legal_move, board)
                     wrappers.board_change_turn(self.chess_lib, board)
                     break
@@ -65,6 +80,7 @@ class Gui:
             self.active_square = None
             self.prev_active_square = None
 
+        # Paint attack squares
         elif self.active_square != None:
             self.marked_squares.add(self.active_square)
             from_index = self.active_square
@@ -75,7 +91,7 @@ class Gui:
     def update_pop_push_move(self, board):
         if self.event is None:
             return False
-
+        
         if self.event.type == p.KEYDOWN:
             if self.event.key == p.K_LEFT:
 
@@ -85,12 +101,16 @@ class Gui:
 
         return False
 
-
-    def draw_board(self):
+    def draw_board(self, board):
         self.win.fill((0, 0, 0))
+        self.update_button_board(board)
 
         for button in self.button_board:
             button.draw(self.win)
+
+        if self.display_promotion_options:
+            for promotion in self.promotion_buttons:
+                self.promotion_buttons[promotion].draw(self.win)
 
         p.display.flip()
 
@@ -101,7 +121,6 @@ class Gui:
             if piece_type != -1:
                 path = self.sprite_paths[piece_type]
                 sprite = p.transform.scale(p.image.load(path), (self.square_size, self.square_size))
-
 
             self.button_board[i].dispay_secondary = False
             if i in self.marked_squares:
@@ -119,9 +138,21 @@ class Gui:
             if event.type == p.MOUSEBUTTONDOWN or event.type == p.KEYDOWN:
                 self.event = event
 
+    def update_promotion_buttons(self):
+        if self.display_promotion_options:
+            for promotion in self.promotion_buttons:
+                if self.promotion_buttons[promotion].check_if_pressed(self.event.pos[0], self.event.pos[1]):
+                    self.promotion = promotion
+                    return True
+                
+            return False
+        
     def update_active_square(self):
         if self.event == None or self.event.type != p.MOUSEBUTTONDOWN:
             return False
+        
+        if self.display_promotion_options:
+            return self.update_promotion_buttons()
         
         for i in range(64):
             if (self.button_board[i].check_if_pressed(self.event.pos[0], self.event.pos[1])):
@@ -134,6 +165,25 @@ class Gui:
                     #print("Active square:", self.active_square)
                 return True
         return False
+    
+    def _get_promotion_buttons(self):
+        buttons = {}
+        piece_types = [1, 2, 3, 4]
+        for i in range(4):
+            button = Button(i * self.square_size + self.square_size * 3, self.square_size * 3, self.square_size, self.square_size)
+            path = self.sprite_paths[piece_types[i]]
+            sprite = p.transform.scale(p.image.load(path), (self.square_size, self.square_size)) 
+            button.set_sprite(sprite)
+            if piece_types[i] == 1:
+                buttons[wrappers.MoveFlag.QUEEN_PROMOTION_FLAG] = button
+            if piece_types[i] == 2:
+                buttons[wrappers.MoveFlag.ROOK_PROMOTION_FLAG] = button
+            if piece_types[i] == 3:
+                buttons[wrappers.MoveFlag.BISHOP_PROMOTION_FLAG] = button
+            if piece_types[i] == 4:
+                buttons[wrappers.MoveFlag.KNIGHT_PROMOTION_FLAG] = button
+
+        return buttons
     
     def _get_button_board(self):
         buttons = [None for i in range(64)]

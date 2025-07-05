@@ -5,6 +5,7 @@
 #include "fenparser.h"
 #include "evaluate.h"
 #include "search.h"
+#include <assert.h>
 
 #define WHITE_CASTLE_QUEEN (1 << 0) // 0001
 #define WHITE_CASTLE_KING  (1 << 1) // 0010
@@ -80,15 +81,11 @@ void board_draw(Board* board) {
 
 void board_push_move(Move move, Board* board) {
     undo_stack_push(move, board);
-
-    if (move_get_flag(move) == CASTLE_FLAG) {
-        make_castle_move(move, board);
-        return;
-    }
-
     int from_index = move_get_from_index(move);
-
+    int to_index = move_get_to_index(move);
+    bool turn = board_get_turn(board);
     PieceType piece_type = board_get_piece(from_index, board);
+
     switch(piece_type) {
         case WHITE_KING:
             board->castling_rights &= ~(WHITE_CASTLE_KING | WHITE_CASTLE_QUEEN);
@@ -120,14 +117,40 @@ void board_push_move(Move move, Board* board) {
             break;
     }
 
-    board_set_piece(move_get_to_index(move), piece_type, board);
-    board_set_piece(from_index, -1, board);
+    switch (move_get_flag(move)) {
+        case CASTLE_FLAG:
+            make_castle_move(move, board);
+            return;
+        case QUEEN_PROMOTION_FLAG:
+            board_set_piece(from_index, -1, board);
+            board_set_piece(to_index, turn ? WHITE_QUEEN : BLACK_QUEEN, board);
+            printf("from, to, type %d %d %d\n", from_index, to_index, turn ? WHITE_QUEEN : BLACK_QUEEN);
+            //printf("QUEEN PROMOTED! \n");
+            return;
+        case ROOK_PROMOTION_FLAG:
+            board_set_piece(from_index, -1, board);
+            board_set_piece(to_index, turn ? WHITE_ROOK : BLACK_ROOK, board);
+            return;
+        case BISHOP_PROMOTION_FLAG:
+            board_set_piece(from_index, -1, board);
+            board_set_piece(to_index, turn ? WHITE_BISHOP : BLACK_BISHOP, board);
+            return;
+        case KNIGHT_PROMOTION_FLAG:
+            board_set_piece(from_index, -1, board);
+            board_set_piece(to_index, turn ? WHITE_KNIGHT : BLACK_KNIGHT, board);
+            return;
+        default:
+            board_set_piece(from_index, -1, board);
+            board_set_piece(to_index, piece_type, board);
+            return;
+    }
 }
 
 Move board_pop_move(Board* board) {
     if (board->undo_stack_size <= 0) {
         return move_create(0, 0, 0);
     }
+    
     UndoNode node = undo_stack_pop(board);
     Move move = node.move;
 
@@ -138,10 +161,8 @@ Move board_pop_move(Board* board) {
         unmake_castle_move(move, board);
         return move;
     }
-    printf("from_index: %d to_index: %d move_piece: %d, captured_piece: %d\n", move_get_flag(move), move_get_to_index(move), node.move_piece, node.captured_piece);
     board_set_piece(move_get_from_index(move), node.move_piece, board);
     board_set_piece(move_get_to_index(move), node.captured_piece, board);
-
     return move;
 }
 
@@ -324,7 +345,6 @@ void make_castle_move(Move move, Board* board) {
     switch (to_index) {
         // White king castle
         case 6:
-            board_set_castling_rights('w', false, board);
             board_set_piece(4, -1, board);
             board_set_piece(7, -1, board);
             board_set_piece(6, WHITE_KING, board);
@@ -332,7 +352,6 @@ void make_castle_move(Move move, Board* board) {
             break;
         // White queen castle
         case 2:
-            board_set_castling_rights('w', false, board);
             board_set_piece(4, -1, board);
             board_set_piece(0, -1, board);
             board_set_piece(2, WHITE_KING, board);
@@ -340,7 +359,6 @@ void make_castle_move(Move move, Board* board) {
             break;
         // Black king castle
         case 62:
-            board_set_castling_rights('b', false, board);
             board_set_piece(60, -1, board);
             board_set_piece(63, -1, board);
             board_set_piece(62, BLACK_KING, board);
@@ -348,7 +366,6 @@ void make_castle_move(Move move, Board* board) {
             break;
         // Black queen castle
         case 58:
-            board_set_castling_rights('b', false, board);
             board_set_piece(60, -1, board);
             board_set_piece(56, -1, board);
             board_set_piece(58, BLACK_KING, board);
@@ -365,7 +382,6 @@ void unmake_castle_move(Move move, Board* board) {
     switch (to_index) {
         // White king castle
         case 6:
-            board_set_castling_rights('w', true, board);
             board_set_piece(6, -1, board);
             board_set_piece(5, -1, board);
             board_set_piece(4, WHITE_KING, board);
@@ -373,7 +389,6 @@ void unmake_castle_move(Move move, Board* board) {
             break;
         // White queen castle
         case 2:
-            board_set_castling_rights('w', true, board);
             board_set_piece(2, -1, board);
             board_set_piece(3, -1, board);
             board_set_piece(4, WHITE_KING, board);
@@ -381,7 +396,6 @@ void unmake_castle_move(Move move, Board* board) {
             break;
         // Black king castle
         case 62:
-            board_set_castling_rights('b', true, board);
             board_set_piece(62, -1, board);
             board_set_piece(61, -1, board);
             board_set_piece(60, BLACK_KING, board);
@@ -389,7 +403,6 @@ void unmake_castle_move(Move move, Board* board) {
             break;
         // Black queen castle
         case 58:
-            board_set_castling_rights('b', true, board);
             board_set_piece(58, -1, board);
             board_set_piece(59, -1, board);
             board_set_piece(60, BLACK_KING, board);
@@ -462,6 +475,11 @@ void undo_stack_push(Move move, Board* board) {
 }
 
 UndoNode undo_stack_pop(Board* board) {
+    if (board->undo_stack_size == 0) {
+        fprintf(stderr, "Undo stack is being popped empty!\n");
+        exit(1);
+    }
+
     return board->undo_stack[--(board->undo_stack_size)];
 }
 

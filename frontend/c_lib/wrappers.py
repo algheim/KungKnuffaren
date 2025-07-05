@@ -18,17 +18,36 @@ class PieceType(IntEnum):
     BLACK_PAWN = 12
     BLACK_PIECES = 13
 
+class MoveFlag(IntEnum):
+    NORMAL_MOVE_FLAG = 0
+    EN_PASSANT_FLAG = 1
+    EN_PASSANT_AVAILABLE_FLAG = 2
+    QUEEN_PROMOTION_FLAG = 3
+    ROOK_PROMOTION_FLAG = 4
+    BISHOP_PROMOTION_FLAG = 5
+    KNIGHT_PROMOTION_FLAG = 6
+    CASTLE_FLAG = 7
+
+class UndoNode(ctypes.Structure):
+    _fields_ = [
+        ("move", ctypes.c_uint16),
+        ("en_passant_index", ctypes.c_int8),
+        ("move_piece", ctypes.c_int8),
+        ("captured_piece", ctypes.c_int8),
+        ("castling_rights", ctypes.c_uint8),
+    ]
+
 
 class Board(ctypes.Structure):
     _fields_ = [
         ("bit_boards", ctypes.c_uint64 * 14),
-        ("en_pessant_board", ctypes.c_uint64),
+        ("en_passant_index", ctypes.c_uint8),
         ("turn", ctypes.c_bool),
-        ("castling_rights", ctypes.c_char),
+        ("castling_rights", ctypes.c_uint8),
+        ("undo_stack", ctypes.POINTER(UndoNode)),
+        ("undo_stack_size", ctypes.c_int),
+        ("undo_stack_capacity", ctypes.c_int),
     ]
-
-    def __repr__(self):
-        return f"Turn: {self.turn}, bit_boards: {[b for b in self.bit_boards]}"
 
 
 class AttackTable(ctypes.Structure):
@@ -135,6 +154,12 @@ def move_get_to_index(chess_lib, move):
     chess_lib.move_get_to_index.restype = ctypes.c_int
 
     return chess_lib.move_get_to_index(move)
+
+def move_get_flag(chess_lib, move):
+    chess_lib.move_get_flag.argtypes = [ctypes.c_uint16]
+    chess_lib.move_get_flag.restype = ctypes.c_int
+
+    return chess_lib.move_get_flag(move)
 
 def move_create(chess_lib, from_index, to_index, flag):
     chess_lib.move_create.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
