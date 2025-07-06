@@ -191,27 +191,33 @@ bool check_en_passant_legality(Board* board, AttackTable* attack_table, int king
 }
 
 void add_castle_moves(Board* board, Move* legal_moves, int* move_count, uint64_t attacked_squares) {
+    uint64_t all_pieces = board->bit_boards[BLACK_PIECES] | board->bit_boards[WHITE_PIECES];
     if (board->turn) {
         if (board_white_can_castle_king(board) && !(attacked_squares & WHITE_KINGSIDE_CASTLE_SAFE)
-            && !(WHITE_KINGSIDE_CASTLE_SAFE & board->bit_boards[WHITE_PIECES])) {
+            && !(WHITE_KINGSIDE_CASTLE_SAFE & all_pieces)) {
             legal_moves[(*move_count)++] = move_create(4, 6, CASTLE_FLAG);
         }
 
         if (board_white_can_castle_queen(board) && !(attacked_squares & WHITE_QUEENSIDE_CASTLE_SAFE)
-            && !(WHITE_QUEENSIDE_CASTLE_SAFE & board->bit_boards[WHITE_PIECES])) {
-            legal_moves[(*move_count)++] = move_create(4, 2, CASTLE_FLAG);
-        }
+            && !(WHITE_QUEENSIDE_CASTLE_SAFE & all_pieces)) {
 
+            if (!((1ULL << 1) & all_pieces)) {
+                legal_moves[(*move_count)++] = move_create(4, 2, CASTLE_FLAG);
+            }
+        }
     } 
     else {
         if (board_black_can_castle_king(board) && !(attacked_squares & BLACK_KINGSIDE_CASTLE_SAFE)
-            && !(BLACK_KINGSIDE_CASTLE_SAFE & board->bit_boards[BLACK_PIECES])) {
+            && !(BLACK_KINGSIDE_CASTLE_SAFE & all_pieces)) {
             legal_moves[(*move_count)++] = move_create(60, 62, CASTLE_FLAG);
         }
 
         if (board_black_can_castle_queen(board) && !(attacked_squares & BLACK_QUEENSIDE_CASTLE_SAFE)
-            && !(BLACK_QUEENSIDE_CASTLE_SAFE & board->bit_boards[BLACK_PIECES])) {
-            legal_moves[(*move_count)++] = move_create(60, 58, CASTLE_FLAG);
+            && !(BLACK_QUEENSIDE_CASTLE_SAFE & all_pieces)) {
+
+            if (!((1ULL << 57) & all_pieces)) {
+                legal_moves[(*move_count)++] = move_create(60, 58, CASTLE_FLAG);
+            }
         }
     }
 }

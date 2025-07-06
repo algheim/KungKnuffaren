@@ -83,7 +83,7 @@ def main():
     board = wrappers.board_from_fen_w(chess_lib, fen_2)
     attack_table = wrappers.attack_table_create_w(chess_lib)
 
-    total_moves = perft(chess_lib, board, attack_table, 3)
+    total_moves = perft(chess_lib, board, attack_table, 4)
 
     print(total_moves)
 
