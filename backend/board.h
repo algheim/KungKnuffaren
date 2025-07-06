@@ -21,7 +21,7 @@ typedef struct {
 // a1 maps to the least significant bit and h8 maps to the most significant bit
 typedef struct board {
     uint64_t bit_boards[14];
-    uint8_t en_passant_index;
+    int8_t en_passant_index;
     bool turn;
     uint8_t castling_rights;
     UndoNode* undo_stack;

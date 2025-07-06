@@ -41,7 +41,7 @@ class UndoNode(ctypes.Structure):
 class Board(ctypes.Structure):
     _fields_ = [
         ("bit_boards", ctypes.c_uint64 * 14),
-        ("en_passant_index", ctypes.c_uint8),
+        ("en_passant_index", ctypes.c_int8),
         ("turn", ctypes.c_bool),
         ("castling_rights", ctypes.c_uint8),
         ("undo_stack", ctypes.POINTER(UndoNode)),

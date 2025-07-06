@@ -19,6 +19,7 @@
 void update_castling_rights(Move move, PieceType piece_type, Board* board);
 void print_piece(PieceType piece_type);
 void make_castle_move(Move move, Board* board);
+void make_en_passant_move(Move move, PieceType piece_type,  Board* board);
 void unmake_castle_move(Move move, Board* board);
 void undo_stack_push(Move move, Board* board);
 UndoNode undo_stack_pop(Board* board);
@@ -87,17 +88,30 @@ void board_push_move(Move move, Board* board) {
     bool turn = board_get_turn(board);
     PieceType piece_type = board_get_piece(from_index, board);
 
+    if (move_get_flag(move) == EN_PASSANT_AVAILABLE_FLAG) {
+        if (board_get_piece_color(from_index, board)) {
+            board->en_passant_index = from_index + 8;
+        }
+        else {
+            board->en_passant_index = from_index - 8;
+        }
+    }
+    else {
+        board->en_passant_index = -1;
+    }
+
     update_castling_rights(move, piece_type, board);
 
     switch (move_get_flag(move)) {
         case CASTLE_FLAG:
             make_castle_move(move, board);
             return;
+        case EN_PASSANT_FLAG:
+            make_en_passant_move(move, piece_type, board);
+            return;
         case QUEEN_PROMOTION_FLAG:
             board_set_piece(from_index, -1, board);
             board_set_piece(to_index, turn ? WHITE_QUEEN : BLACK_QUEEN, board);
-            //printf("from, to, type %d %d %d\n", from_index, to_index, turn ? WHITE_QUEEN : BLACK_QUEEN);
-            //printf("QUEEN PROMOTED! \n");
             return;
         case ROOK_PROMOTION_FLAG:
             board_set_piece(from_index, -1, board);
@@ -128,6 +142,16 @@ Move board_pop_move(Board* board) {
 
     board->castling_rights = node.castling_rights;
     board->en_passant_index = node.en_passant_index;
+
+    if (move_get_flag(move) == EN_PASSANT_FLAG) {
+        int to_index = move_get_to_index(move);
+        int from_index = move_get_from_index(move);
+        int captured_index = board_get_piece_color(to_index, board) ? to_index - 8 : to_index + 8;
+        board_set_piece(from_index, node.move_piece, board);
+        board_set_piece(to_index, -1, board);
+        board_set_piece(captured_index, node.captured_piece, board);
+        return move;
+    }
     
     if (move_get_flag(move) == CASTLE_FLAG) {
         unmake_castle_move(move, board);
@@ -307,6 +331,7 @@ void board_set_castling_rights(char side, bool value, Board* board) {
 }
 
 void board_destroy(Board* board) {
+    free(board->undo_stack);
     free(board);
 }
 
@@ -363,6 +388,15 @@ void update_castling_rights(Move move, PieceType piece_type, Board* board) {
         default:
             break;
     }
+}
+
+void make_en_passant_move(Move move, PieceType piece_type,  Board* board) {
+    int from_index = move_get_from_index(move);
+    int to_index = move_get_to_index(move);
+    int captured_index = board->turn ? to_index - 8 : to_index + 8;
+    board_set_piece(from_index, -1, board);
+    board_set_piece(captured_index, -1, board);
+    board_set_piece(to_index, piece_type, board);
 }
 
 void make_castle_move(Move move, Board* board) {
@@ -485,11 +519,20 @@ void print_piece(PieceType piece_type) {
 
 void undo_stack_push(Move move, Board* board) {
     UndoNode new_node;
-    new_node.captured_piece = (int8_t) board_get_piece(move_get_to_index(move), board);
+    int to_index = move_get_to_index(move);
     new_node.move_piece = (int8_t) board_get_piece(move_get_from_index(move), board);
     new_node.move = move;
     new_node.castling_rights = board->castling_rights;
-    new_node.en_passant_index = 0;
+    new_node.en_passant_index = board->en_passant_index;
+
+    int captured_index;
+    if (move_get_flag(move) == EN_PASSANT_FLAG) {
+        captured_index = board->turn ? to_index - 8 : to_index + 8;
+    }
+    else {
+        captured_index = to_index;
+    }
+    new_node.captured_piece = board_get_piece(captured_index, board);
 
     if (board->undo_stack_size == board->undo_stack_capacity) {
         board->undo_stack_capacity *= 2;
