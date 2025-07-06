@@ -393,7 +393,7 @@ void update_castling_rights(Move move, PieceType piece_type, Board* board) {
 void make_en_passant_move(Move move, PieceType piece_type,  Board* board) {
     int from_index = move_get_from_index(move);
     int to_index = move_get_to_index(move);
-    int captured_index = board->turn ? to_index - 8 : to_index + 8;
+    int captured_index = board_get_piece_color(from_index, board) ? to_index - 8 : to_index + 8;
     board_set_piece(from_index, -1, board);
     board_set_piece(captured_index, -1, board);
     board_set_piece(to_index, piece_type, board);
@@ -520,14 +520,15 @@ void print_piece(PieceType piece_type) {
 void undo_stack_push(Move move, Board* board) {
     UndoNode new_node;
     int to_index = move_get_to_index(move);
-    new_node.move_piece = (int8_t) board_get_piece(move_get_from_index(move), board);
+    int from_index = move_get_from_index(move);
+    new_node.move_piece = (int8_t) board_get_piece(from_index, board);
     new_node.move = move;
     new_node.castling_rights = board->castling_rights;
     new_node.en_passant_index = board->en_passant_index;
 
     int captured_index;
     if (move_get_flag(move) == EN_PASSANT_FLAG) {
-        captured_index = board->turn ? to_index - 8 : to_index + 8;
+        captured_index = board_get_piece_color(from_index, board) ? to_index - 8 : to_index + 8;
     }
     else {
         captured_index = to_index;

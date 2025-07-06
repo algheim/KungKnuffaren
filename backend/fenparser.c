@@ -16,6 +16,8 @@ int add_fen_char(char* fen, char c, int* current_index);
 int set_piece_chars(char* fen, Board* board, int* current_index);
 int set_active_color_char(char* fen, Board* board, int* current_index);
 int set_castling_rights(char* fen, Board* board, int* current_index);
+void set_en_passant_square(char* fen, Board* board, int* current_index);
+char* get_en_passant_string(int en_passant_index, int* size);
 
 Board* fen_to_board(char* fen, int size) {
     Board* board = board_create();
@@ -44,9 +46,7 @@ char* board_to_fen(Board* board) {
 
     set_castling_rights(fen, board, &current_index);
 
-    // En pessent
-    add_fen_char(fen, '-', &current_index);
-    add_fen_char(fen, ' ', &current_index);
+    set_en_passant_square(fen, board, &current_index);
 
     // Half clock move
     add_fen_char(fen, '0', &current_index);
@@ -59,7 +59,37 @@ char* board_to_fen(Board* board) {
     return fen;
 }
 
+void set_en_passant_square(char* fen, Board* board, int* current_index) {
+    int size;
+    char* en_passant_str = get_en_passant_string(board->en_passant_index, &size);
+
+    for (int i = 0 ; i < size ; i++) {
+        add_fen_char(fen, en_passant_str[i], current_index);
+    }
+    add_fen_char(fen, ' ', current_index);
+}
+
+char* get_en_passant_string(int en_passant_index, int* size) {
+    if (en_passant_index == -1) {
+        *size = 1;
+        return "-";
+    }
+    *size = 3;
+
+    static char str[3];
+
+    int file = en_passant_index % 8;
+    int rank = en_passant_index / 8;
+
+    str[0] = 'a' + file;
+    str[1] = '1' + rank;
+    str[2] = '\0';
+
+    return str;
+}
+
 int set_castling_rights(char* fen, Board* board, int* current_index) {
+    int start_current_index = *current_index;
     if (board_white_can_castle_queen(board)) {
         if (add_fen_char(fen, 'Q', current_index) == -1) {
             return -1;
@@ -77,6 +107,12 @@ int set_castling_rights(char* fen, Board* board, int* current_index) {
     }
     if (board_black_can_castle_king(board)) {
         if (add_fen_char(fen, 'k', current_index) == -1) {
+            return -1;
+        }
+    }
+
+    if (*current_index == start_current_index) {
+        if (add_fen_char(fen, '-', current_index) == -1) {
             return -1;
         }
     }

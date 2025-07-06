@@ -77,8 +77,11 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
     uint64_t squares_blocking_king = ~0ULL;
     uint64_t friendly_pieces = board->turn ? board->bit_boards[WHITE_PIECES] : board->bit_boards[BLACK_PIECES];
 
-    // Legal king moves
+    // The king shouldn't block enemy sliding pieces, so I remove it :)
+    board_set_piece(king_index, -1, board);
     uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, &attacked_squares);
+    board_set_piece(king_index, board->turn ? WHITE_KING : BLACK_KING, board);
+
     uint64_t legal_king_moves = attack_table->king_table[king_index];
     legal_king_moves &= ~friendly_pieces;
     legal_king_moves &= ~attacked_squares;
@@ -118,6 +121,10 @@ void add_en_passant_moves(Board* board,
                           uint64_t pinned_pieces, 
                           int king_index) {
     if (board->en_passant_index == -1) {
+        return;
+    }
+    int en_passant_rank = board->en_passant_index / 8;
+    if ((board->turn && en_passant_rank != 5) || (!board->turn && en_passant_rank != 2)) {
         return;
     }
 
@@ -621,7 +628,7 @@ uint64_t get_white_pawn_moves(Board* board, AttackTable* attack_table, int from_
 
     if (from_index / 8 == 1) {
         if ((board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]) & (1ULL << (from_index + 8))) {
-            legal_moves ^= 1ULL << (from_index + 16);
+            legal_moves &= ~(1ULL << (from_index + 16));
         }
     }
 
@@ -631,14 +638,14 @@ uint64_t get_white_pawn_moves(Board* board, AttackTable* attack_table, int from_
 uint64_t get_black_pawn_moves(Board* board, AttackTable* attack_table, int from_index) {
     uint64_t normal_attacks = attack_table->black_pawn_table[from_index];
     uint64_t attack_attacks = attack_table->black_pawn_attack_table[from_index];
-    uint64_t legal_moves = 0;
+    uint64_t legal_moves = 0ULL;
 
     legal_moves |= normal_attacks & (~(board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]));
     legal_moves |= attack_attacks & (board->bit_boards[WHITE_PIECES]);
 
     if (from_index / 8 == 6) {
         if ((board->bit_boards[WHITE_PIECES] | board->bit_boards[BLACK_PIECES]) & (1ULL << (from_index - 8))) {
-            legal_moves ^= 1ULL << (from_index - 16);
+            legal_moves &= ~(1ULL << (from_index - 16));
         }
     }
 
@@ -647,6 +654,7 @@ uint64_t get_black_pawn_moves(Board* board, AttackTable* attack_table, int from_
 
 uint64_t get_white_pawn_attacks(Board* board, AttackTable* attack_table, int from_index) {
     uint64_t attack_attacks = attack_table->white_pawn_attack_table[from_index];
+    return attack_attacks;
     uint64_t legal_moves = 0ULL;
     legal_moves |= attack_attacks & (board->bit_boards[BLACK_PIECES]);
 
@@ -655,6 +663,7 @@ uint64_t get_white_pawn_attacks(Board* board, AttackTable* attack_table, int fro
 
 uint64_t get_black_pawn_attacks(Board* board, AttackTable* attack_table, int from_index) {
     uint64_t attack_attacks = attack_table->black_pawn_attack_table[from_index];
+    return attack_attacks;
     uint64_t legal_moves = 0ULL;
     legal_moves |= attack_attacks & (board->bit_boards[WHITE_PIECES]);
 
