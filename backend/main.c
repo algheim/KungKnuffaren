@@ -28,7 +28,7 @@ int main(void) {
     char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     Board* board = board_from_fen(fen, strlen(fen));
 
-    uint32_t count = move_generation_test(board, attack_table, 5);
+    uint32_t count = move_generation_test(board, attack_table, 6);
     printf("Count: %d\n", count);
 
     board_destroy(board);

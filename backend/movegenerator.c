@@ -48,7 +48,8 @@ void add_en_passant_moves(Board* board,
                           AttackTable* attack_table, 
                           Move* moves, int* move_count, 
                           uint64_t pinned_pieces, 
-                          int king_index);
+                          int king_index,
+                          uint64_t squares_blocking_king);
 bool check_en_passant_legality(Board* board, AttackTable* attack_table, int king_index, int from_index, int to_index);
 static int max(int n1, int n2);
 static int min(int n1, int n2);
@@ -98,13 +99,14 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
         }
         squares_blocking_king = bit_board_from_to(king_index, attacker_index);
         squares_blocking_king |= (1ULL << attacker_index);
+        //bit_board_print(squares_blocking_king);
     }
     else {
         add_castle_moves(board, legal_moves, move_count, attacked_squares);
     }
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
 
-    add_en_passant_moves(board, attack_table, legal_moves, move_count, pinned_pieces, king_index);
+    add_en_passant_moves(board, attack_table, legal_moves, move_count, pinned_pieces, king_index, squares_blocking_king);
 
     // Regular moves
     get_moves_from_bit_board(board, legal_moves, move_count, attack_table, pinned_pieces, squares_blocking_king, king_index);
@@ -119,7 +121,8 @@ void add_en_passant_moves(Board* board,
                           AttackTable* attack_table, 
                           Move* moves, int* move_count, 
                           uint64_t pinned_pieces, 
-                          int king_index) {
+                          int king_index,
+                          uint64_t squares_blocking_king) {
     if (board->en_passant_index == -1) {
         return;
     }
@@ -130,6 +133,11 @@ void add_en_passant_moves(Board* board,
 
     uint64_t pawns = board->turn ? board->bit_boards[WHITE_PAWN] : board->bit_boards[BLACK_PAWN];
     uint64_t* pawn_attack_table = board->turn ? attack_table->white_pawn_attack_table : attack_table->black_pawn_attack_table;
+    int captured_index = board->turn ? board->en_passant_index - 8 : board->en_passant_index + 8;
+
+    if (squares_blocking_king & (1ULL << captured_index)) {
+        squares_blocking_king |= 1ULL << (board->en_passant_index);
+    }
 
     while (pawns) {
         int from_index = __builtin_ctzll(pawns);
@@ -137,6 +145,7 @@ void add_en_passant_moves(Board* board,
 
         uint64_t current_attacks = pawn_attack_table[from_index];
         uint64_t legal_move = current_attacks & (1ULL << (board->en_passant_index));
+        legal_move &= squares_blocking_king;
 
         if (pinned_pieces & (1ULL << from_index)) {
             uint64_t pinned_ray = bit_board_get_line(king_index, from_index);

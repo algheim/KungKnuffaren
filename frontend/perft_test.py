@@ -80,10 +80,11 @@ def main():
 
     start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     fen_2 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0"
-    board = wrappers.board_from_fen_w(chess_lib, fen_2)
+    fen_3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1" 
+    board = wrappers.board_from_fen_w(chess_lib, fen_3)
     attack_table = wrappers.attack_table_create_w(chess_lib)
 
-    total_moves = perft(chess_lib, board, attack_table, 4)
+    total_moves = perft(chess_lib, board, attack_table, 5)
 
     print(total_moves)
 

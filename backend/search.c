@@ -1,4 +1,5 @@
 #include "search.h"
+#include <stdio.h>
 
 int min_max(Board* board, AttackTable* attack_table, int depth);
 
@@ -36,8 +37,14 @@ int min_max(Board* board, AttackTable* attack_table, int depth) {
         }
         return - board_evaluate_current(board);
     }
+
     int move_count = 0;
     Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
+
+    if (move_count == 0) {
+        printf("Check mate found!\n");
+        return -100000;
+    }
 
     int best_score = -100000;
 

@@ -31,7 +31,6 @@ def main():
 
         if gui.update_active_square():
             fen = wrappers.board_get_fen_w(chess_lib, board)
-            print(fen)
             legal_moves, _ = wrappers.get_legal_moves_w(chess_lib, board, attack_table)
             gui.update_board(board, legal_moves)
 
