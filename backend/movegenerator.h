@@ -14,5 +14,7 @@
  */
 Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
 
+Move* get_legal_captures(Board* board, AttackTable* attack_table, int* move_count);
+
 
 #endif

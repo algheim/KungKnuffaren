@@ -167,3 +167,8 @@ def move_create(chess_lib, from_index, to_index, flag):
 
     return chess_lib.move_create(ctypes.c_int(from_index), ctypes.c_int(to_index), ctypes.c_int(flag))
 
+def move_exists(chess_lib, move):
+    chess_lib.move_exists.argtypes = [ctypes.c_uint16]
+    chess_lib.move_exists.restype = ctypes.c_bool
+
+    return bool(chess_lib.move_exists(move))

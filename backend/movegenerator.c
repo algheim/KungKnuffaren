@@ -62,6 +62,23 @@ static int min(int n1, int n2);
 
 /* -------------------------- External functions ----------------------------*/
 
+/* This should be optimiezed later! */
+Move* get_legal_captures(Board* board, AttackTable* attack_table, int* move_count) {
+    int legal_move_count = 0;
+    Move* legal_moves = get_legal_moves(board, attack_table, &legal_move_count);
+    Move* legal_captures = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
+    uint64_t enemy_pieces = board->turn ? board->bit_boards[BLACK_PIECES] : board->bit_boards[WHITE_PIECES];
+
+    for (int i = 0 ; i < legal_move_count ; i++) {
+        if ((1ULL << move_get_to_index(legal_moves[i])) & enemy_pieces || move_get_flag(legal_moves[i]) == EN_PASSANT_FLAG) {
+            legal_captures[(*move_count)++] = legal_moves[i];
+        }
+    }
+    free(legal_moves);
+
+    return legal_captures;
+}
+
 Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
     //printf("Generating legal moves for %s\n", board->turn ? "white" : "black");
     Move* legal_moves = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));

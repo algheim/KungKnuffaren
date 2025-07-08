@@ -15,6 +15,7 @@
 #include <string.h>
 #include "bitboard.h"
 #include "evaluate.h"
+#include <time.h>
 
 Move read_move();
 Move parse_move(char* string);
@@ -28,8 +29,14 @@ int main(void) {
     char* fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     Board* board = board_from_fen(fen, strlen(fen));
 
+    double start_time = clock();
     uint32_t count = move_generation_test(board, attack_table, 6);
+    double end_time = clock();
+    double elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+
     printf("Count: %d\n", count);
+    printf("Time: %.3f\n", elapsed_time);
+    printf("Nodes per second: %.f\n", count/elapsed_time);
 
     board_destroy(board);
     attack_table_destroy(attack_table);

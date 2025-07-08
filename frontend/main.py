@@ -5,7 +5,10 @@ import pygame as p
 
 
 def make_enemy_move(chess_lib, board, attack_table):
-        best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 3)
+        best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 4)
+        if not wrappers.move_exists(chess_lib, best_move):
+             print("I lost!!")
+             return
         wrappers.board_push_move(chess_lib, best_move, board)
         wrappers.board_change_turn(chess_lib, board)
 
