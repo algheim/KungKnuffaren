@@ -5,7 +5,10 @@ import pygame as p
 
 
 def make_enemy_move(chess_lib, board, attack_table):
-        best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 4)
+        best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
+        #wrappers.board_get_best_move_w(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
+        #best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 4, wrappers.SearchAlg.MIN_MAX)
+
         if not wrappers.move_exists(chess_lib, best_move):
              print("I lost!!")
              return
@@ -23,6 +26,7 @@ def main():
     #board = wrappers.board_create_w(chess_lib)
     start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     fen2 = "rnbq1b1r/pppppppp/4n1k1/B7/3P1P2/4P3/PPP3PP/RNBQK1NR w KQ - 0 1"
+    fen3 = "r4k1r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/5Q1p/PPPBBPPP/RN2K2R w QK - 0 0"
     board = wrappers.board_from_fen_w(chess_lib, start_fen)
     #wrappers.board_set_start_w(chess_lib, board)
     attack_table = wrappers.attack_table_create_w(chess_lib)

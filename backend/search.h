@@ -5,13 +5,13 @@
 #include "board.h"
 
 typedef enum {
-    min_max_move,
-    alpha_beta_modd,
-    alpha_beta_ordered_mode,
-    alpha_beta_ultimate_mode,
+    MIN_MAX,
+    ALPHA_BETA,
+    ALHPA_BETA_ORDERED,
+    ALPHA_BETA_ULTIMATE,
 } SearchAlg;
 
-Move search_best_move(Board* board, AttackTable* attack_table, int depth);
+Move search_best_move(Board* board, AttackTable* attack_table, int depth, SearchAlg alg);
 
 
 

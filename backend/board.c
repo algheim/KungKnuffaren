@@ -239,6 +239,10 @@ Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_c
     return get_legal_moves(board, attack_table, move_count);
 }
 
+Move* board_get_legal_captures(Board* board, AttackTable* attack_table, int* move_count) {
+    return get_legal_captures(board, attack_table, move_count);
+}
+
 void board_change_turn(Board* board) {
     board->turn = !board->turn;
 }

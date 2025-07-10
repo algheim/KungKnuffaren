@@ -28,6 +28,12 @@ class MoveFlag(IntEnum):
     KNIGHT_PROMOTION_FLAG = 6
     CASTLE_FLAG = 7
 
+class SearchAlg(IntEnum):
+    MIN_MAX = 0
+    ALPHA_BETA = 1
+    ALPHA_BETA_ORDERED = 2
+    ALPHA_BETA_ULTIMATE = 3
+
 class UndoNode(ctypes.Structure):
     _fields_ = [
         ("move", ctypes.c_uint16),
@@ -114,6 +120,15 @@ def get_legal_moves_w(chess_lib, board, attack_table):
 
     return legal_moves[:move_count.value], move_count.value
 
+def board_get_legal_captures(chess_lib, board, attack_table):
+    chess_lib.board_get_legal_captures.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.POINTER(ctypes.c_int)]
+    chess_lib.board_get_legal_captures.restype = ctypes.POINTER(ctypes.c_uint16)
+
+    move_count = ctypes.c_int(0)
+    legal_moves = chess_lib.board_get_legal_captures(board, attack_table, ctypes.pointer(move_count))
+
+    return legal_moves[:move_count.value], move_count.value
+
 def board_from_fen_w(chess_lib, fen):
     fen = ctypes.create_string_buffer(fen.encode('utf-8'))
     chess_lib.board_from_fen.argtypes = [ctypes.POINTER(ctypes.c_char), ctypes.c_int]
@@ -128,11 +143,11 @@ def board_get_fen_w(chess_lib, board):
     fen_ptr = chess_lib.board_get_fen(board)
     return ctypes.string_at(fen_ptr).decode('utf-8')
 
-def board_get_best_move_w(chess_lib, board, attack_table, depth):
-    chess_lib.board_get_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int]
+def board_get_best_move_w(chess_lib, board, attack_table, depth, algorithm):
+    chess_lib.board_get_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int, ctypes.c_int]
     chess_lib.board_get_best_move.restype = ctypes.c_uint16
 
-    return chess_lib.board_get_best_move(board, attack_table, ctypes.c_int(depth))
+    return chess_lib.board_get_best_move(board, attack_table, ctypes.c_int(depth), algorithm)
 
 def attack_table_create_w(chess_lib):
     chess_lib.attack_table_create.argtypes = []

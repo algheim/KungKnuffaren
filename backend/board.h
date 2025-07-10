@@ -61,6 +61,8 @@ void board_set_start(Board* board);
 
 Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
 
+Move* board_get_legal_captures(Board* board, AttackTable* attack_table, int* move_count);
+
 void board_set_turn(bool turn, Board* board);
 
 bool board_white_can_castle_king(Board* board);
