@@ -38,8 +38,6 @@ char* board_get_fen(Board* board);
 
 int board_evaluate_current(Board* board);
 
-Move board_get_best_move(Board* board, AttackTable* attack_table, int depth);
-
 void board_draw(Board* board);
 
 void board_push_move(Move move, Board* board);

@@ -32,7 +32,7 @@ class SearchAlg(IntEnum):
     MIN_MAX = 0
     ALPHA_BETA = 1
     ALPHA_BETA_ORDERED = 2
-    ALPHA_BETA_ULTIMATE = 3
+    ITERATIVE_DEEPENING = 3
 
 class UndoNode(ctypes.Structure):
     _fields_ = [
@@ -68,6 +68,14 @@ class AttackTable(ctypes.Structure):
         ("white_pawn_attack_table", ctypes.c_uint64 * 64),
         ("black_pawn_attack_table", ctypes.c_uint64 * 64),
         ("ray_dir_table", ctypes.c_uint64 * 64 * 8),
+    ]
+
+
+class ScoredMove(ctypes.Structure):
+    _fields_ = [
+        ("move", ctypes.c_uint16),
+        ("eval_score", ctypes.c_int),
+        ("guess_score", ctypes.c_int),
     ]
 
 
@@ -143,11 +151,11 @@ def board_get_fen_w(chess_lib, board):
     fen_ptr = chess_lib.board_get_fen(board)
     return ctypes.string_at(fen_ptr).decode('utf-8')
 
-def board_get_best_move_w(chess_lib, board, attack_table, depth, algorithm):
-    chess_lib.board_get_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int, ctypes.c_int]
-    chess_lib.board_get_best_move.restype = ctypes.c_uint16
+def search_best_move(chess_lib, board, attack_table, depth, algorithm):
+    chess_lib.search_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int, ctypes.c_int]
+    chess_lib.search_best_move.restype = ctypes.c_uint16
 
-    return chess_lib.board_get_best_move(board, attack_table, ctypes.c_int(depth), algorithm)
+    return chess_lib.search_best_move(board, attack_table, ctypes.c_int(depth), algorithm)
 
 def attack_table_create_w(chess_lib):
     chess_lib.attack_table_create.argtypes = []

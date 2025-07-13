@@ -5,9 +5,9 @@ import pygame as p
 
 
 def make_enemy_move(chess_lib, board, attack_table):
-        best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
-        #wrappers.board_get_best_move_w(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
-        #best_move = wrappers.board_get_best_move_w(chess_lib, board, attack_table, 4, wrappers.SearchAlg.MIN_MAX)
+        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
+        wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
+        #best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.MIN_MAX)
 
         if not wrappers.move_exists(chess_lib, best_move):
              print("I lost!!")
@@ -47,8 +47,6 @@ def main():
         gui.draw_board(board)
 
         clock.tick(30)
-
-
 
 if __name__ == "__main__":
     main()

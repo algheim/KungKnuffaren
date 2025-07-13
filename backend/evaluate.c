@@ -1,5 +1,6 @@
 #include "board.h"
 #include <stdint.h>
+#include <stdio.h>
 
 #define QUEEN_VALUE     900
 #define ROOK_VALUE      500 

@@ -53,8 +53,8 @@ int board_evaluate_current(Board* board) {
     return evaluate_board(board);
 }
 
-Move board_get_best_move(Board* board, AttackTable* attack_table, int depth) {
-    return search_best_move(board, attack_table, depth);
+Move board_get_best_move(Board* board, AttackTable* attack_table, int depth, SearchAlg alg) {
+    return search_best_move(board, attack_table, depth, alg);
 }
 
 bool board_get_turn(Board* board) {
