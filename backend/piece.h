@@ -1,6 +1,7 @@
 #ifndef PIECE_H
 #define PIECE_H
 
+#include <stdbool.h>
 
 typedef enum {
     WHITE_KING,
@@ -20,5 +21,6 @@ typedef enum {
     BLACK_PIECES,
 } PieceType;
 
+bool piece_get_color(PieceType type);
 
 #endif

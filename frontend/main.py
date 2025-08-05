@@ -5,9 +5,10 @@ import pygame as p
 
 
 def make_enemy_move(chess_lib, board, attack_table):
-        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
-        wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
-        #best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.MIN_MAX)
+        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 4, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
+        #wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
+        ##best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.MIN_MAX)
+        #best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ITERATIVE_DEEPENING)
 
         if not wrappers.move_exists(chess_lib, best_move):
              print("I lost!!")
@@ -40,6 +41,8 @@ def main():
             fen = wrappers.board_get_fen_w(chess_lib, board)
             legal_moves, _ = wrappers.get_legal_moves_w(chess_lib, board, attack_table)
             gui.update_board(board, legal_moves)
+            print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
+
 
             if not board.contents.turn:
                 make_enemy_move(chess_lib, board, attack_table)

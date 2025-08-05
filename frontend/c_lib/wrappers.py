@@ -128,6 +128,12 @@ def get_legal_moves_w(chess_lib, board, attack_table):
 
     return legal_moves[:move_count.value], move_count.value
 
+def board_evaluate_current(chess_lib, board):
+    chess_lib.board_evaluate_current.argtypes = [ctypes.POINTER(Board)]
+    chess_lib.board_evaluate_current.restype = ctypes.c_float
+
+    return chess_lib.board_evaluate_current(board)
+
 def board_get_legal_captures(chess_lib, board, attack_table):
     chess_lib.board_get_legal_captures.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.POINTER(ctypes.c_int)]
     chess_lib.board_get_legal_captures.restype = ctypes.POINTER(ctypes.c_uint16)

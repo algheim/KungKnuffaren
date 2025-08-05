@@ -1,33 +1,34 @@
-#define LARGE_POSITIVE 100000
-#define LARGE_NEGATIVE -100000
-
 #include "search.h"
 #include "evaluate.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 
+#define LARGE_POSITIVE 100000
+#define LARGE_NEGATIVE -100000
+
 static int positions_searched = 0;
 static double elapsed_time = -1;
 static Move best_move_found = -1;
 static SearchAlg current_algorithm = -1;
-static int global_eval = 0;
+static float global_eval = 0;
 
 typedef struct {
     Move move;
-    int eval_score;
-    int guess_score;
+    float eval_score;
+    float guess_score;
 } ScoredMove;
 
-int min_max(Board* board, AttackTable* attack_table, int depth);
-int alpha_beta(Board* board, AttackTable* attack_table, int alpha, int beta, int depth);
-int alpha_beta_ordered(Board* board, AttackTable* attack_table, int alpha, int beta, int depth);
+float min_max(Board* board, AttackTable* attack_table, int depth);
+float alpha_beta(Board* board, AttackTable* attack_table, float alpha, float beta, int depth);
+float alpha_beta_ordered(Board* board, AttackTable* attack_table, float alpha, float beta, int depth);
+ScoredMove* iterative_deepening(Board* board, AttackTable* attack_table, double time);
 
-int search_captures_only(Board* board, AttackTable* attack_table, int alpha, int beta, int depth);
+float search_captures_only(Board* board, AttackTable* attack_table, float alpha, float beta, int depth);
 
 // Move ordering
 ScoredMove* get_scored_moves(Board* board, Move* moves, int move_count);
-int get_move_score(Board* board, Move move);
+float get_move_score(Board* board, Move move);
 void order_moves_by_guess(Board* board, ScoredMove* moves, int move_count);
 void order_moves_by_eval(Board* board, ScoredMove* scored_moves, int move_count);
 
@@ -42,17 +43,29 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
     current_algorithm = alg;
 
     int move_count = 0;
-    int best_score = LARGE_NEGATIVE;
+    float best_score = LARGE_NEGATIVE;
     int best_index = -1;
+
+    if (alg == ITERATIVE_DEEPENING) {
+        ScoredMove* scored_moves = iterative_deepening(board, attack_table, 1);
+        clock_t end_time = clock();
+        best_move_found = scored_moves[0].move;
+        elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+        global_eval = board->turn ? scored_moves[0].eval_score : -scored_moves[0].eval_score;
+        free(scored_moves);
+        print_search_stats();
+        return best_move_found;
+    }
 
     Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
     ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count);
     order_moves_by_guess(board, scored_moves, move_count);
+    float alpha = LARGE_NEGATIVE;
 
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(scored_moves[i].move, board);
         board_change_turn(board);
-        int score;
+        float score;
 
         switch(alg) {
 
@@ -60,16 +73,19 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
                 score = -min_max(board, attack_table, depth - 1);
                 break;
             case ALPHA_BETA:
-                score = -alpha_beta(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, depth - 1);
+                score = -alpha_beta(board, attack_table, alpha, LARGE_POSITIVE, depth - 1);
                 break;
             case ALHPA_BETA_ORDERED:
-                score = -alpha_beta_ordered(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, depth - 1);
+                score = -alpha_beta_ordered(board, attack_table, alpha, LARGE_POSITIVE, depth - 1);
                 break;
                 
             default:
                 fprintf(stderr, "Invalid search algorithm\n");
                 exit(1);
                 break;
+        }
+        if (score > alpha) {
+            alpha = score;
         }
 
         board_change_turn(board);
@@ -93,8 +109,84 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
     return best_move_found;
 }
 
+/*int alpha_beta_test(Board* board, AttackTable* attack_table, int alpha, int beta, int depth, Move* best_move) {
+    if (depth == 0) {
+        if (board->turn) {
+            return board_evaluate_current(board);
+        }
+        return - board_evaluate_current(board);
+    }
+    if (depth == 0) {
+        return (ScoredMove) {.move = move_create(0, 0, 0),
+                             .eval_score = search_captures_only(board, attack_table, alpha, beta, depth)
+                            };
+    }
 
-int alpha_beta_ordered(Board* board, AttackTable* attack_table, int alpha, int beta, int depth) {
+    positions_searched++;
+
+    int move_count = 0;
+    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
+
+    if (move_count == 0) {
+        return (ScoredMove){.move = move_create(0, 0, 0), .eval_score = LARGE_NEGATIVE};
+    }
+
+    Move best_move;
+
+    board_change_turn(board);
+    for (int i = 0 ; i < move_count ; i++) {
+        board_push_move(legal_moves[i], board);
+
+        int score = - alpha_beta(board, attack_table, -beta, -alpha, depth - 1);
+
+        board_pop_move(board);
+
+        if (score >= beta) {
+            break;
+        }
+
+        if (score >= alpha) {
+            best_move = legal_moves[i];
+            alpha = score;
+        }
+    }
+
+    board_change_turn(board);
+    return (ScoredMove) {.move = best_move, .eval_score = alpha};
+}*/
+
+
+ScoredMove* iterative_deepening(Board* board, AttackTable* attack_table, double time) {
+    int max_depth = 3;
+    int current_depth = 1;
+    int move_count = 0;
+    
+    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
+    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count);
+    free(legal_moves);
+    order_moves_by_guess(board, scored_moves, move_count);
+
+    while(current_depth <= max_depth) {
+        for (int i = 0 ; i < move_count ; i++) {
+            board_push_move(scored_moves[i].move, board);
+            board_change_turn(board);
+            
+            float score = -alpha_beta_ordered(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, current_depth);
+            scored_moves[i].eval_score = score;
+
+            board_pop_move(board);
+            board_change_turn(board);
+        }
+
+        current_depth++;
+        order_moves_by_eval(board, scored_moves, move_count);
+    }
+
+    return scored_moves;
+}
+
+
+float alpha_beta_ordered(Board* board, AttackTable* attack_table, float alpha, float beta, int depth) {
     /*if (depth == 0) {
         if (board->turn) {
             return board_evaluate_current(board);
@@ -102,7 +194,7 @@ int alpha_beta_ordered(Board* board, AttackTable* attack_table, int alpha, int b
         return - board_evaluate_current(board);
     }*/
     if (depth == 0) {
-        int score = search_captures_only(board, attack_table, alpha, beta, 0);
+        float score = search_captures_only(board, attack_table, alpha, beta, 0);
         return score;
     }
     positions_searched++;
@@ -123,7 +215,7 @@ int alpha_beta_ordered(Board* board, AttackTable* attack_table, int alpha, int b
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(scored_moves[i].move, board);
 
-        int score = - alpha_beta(board, attack_table, -beta, -alpha, depth - 1);
+        float score = - alpha_beta_ordered(board, attack_table, -beta, -alpha, depth - 1);
 
         board_pop_move(board);
 
@@ -144,7 +236,7 @@ int alpha_beta_ordered(Board* board, AttackTable* attack_table, int alpha, int b
 
 // Alpha = The minimum score of the current player
 // Beta = The maximum score the opponent is willing to tolerate
-int alpha_beta(Board* board, AttackTable* attack_table, int alpha, int beta, int depth) {
+float alpha_beta(Board* board, AttackTable* attack_table, float alpha, float beta, int depth) {
     /*if (depth == 0) {
         if (board->turn) {
             return board_evaluate_current(board);
@@ -167,7 +259,7 @@ int alpha_beta(Board* board, AttackTable* attack_table, int alpha, int beta, int
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(legal_moves[i], board);
 
-        int score = - alpha_beta(board, attack_table, -beta, -alpha, depth - 1);
+        float score = - alpha_beta(board, attack_table, -beta, -alpha, depth - 1);
 
         board_pop_move(board);
 
@@ -187,7 +279,7 @@ int alpha_beta(Board* board, AttackTable* attack_table, int alpha, int beta, int
 
 
 // Returns the evaluation for the best move according to the current player
-int min_max(Board* board, AttackTable* attack_table, int depth) {
+float min_max(Board* board, AttackTable* attack_table, int depth) {
     if (depth == 0) {
         if (board->turn) {
             return board_evaluate_current(board);
@@ -204,14 +296,14 @@ int min_max(Board* board, AttackTable* attack_table, int depth) {
         return LARGE_NEGATIVE;
     }
 
-    int best_score = LARGE_NEGATIVE;
+    float best_score = LARGE_NEGATIVE;
 
     board_change_turn(board);
 
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(legal_moves[i], board);
 
-        int score = - min_max(board, attack_table, depth - 1);
+        float score = - min_max(board, attack_table, depth - 1);
 
         board_pop_move(board);
 
@@ -225,9 +317,10 @@ int min_max(Board* board, AttackTable* attack_table, int depth) {
     return best_score;
 }
 
-int search_captures_only(Board* board, AttackTable* attack_table, int alpha, int beta, int depth) {
+float search_captures_only(Board* board, AttackTable* attack_table, float alpha, float beta, int depth) {
     positions_searched++;
-    int score = board->turn ? board_evaluate_current(board) : -board_evaluate_current(board);
+    float score = board_evaluate_current(board);
+    score = board->turn ? score : -score;
     //printf("depth: %d\n", depth);
     
     if (score >= beta) {
@@ -262,6 +355,7 @@ int search_captures_only(Board* board, AttackTable* attack_table, int alpha, int
         board_change_turn(board);
 
         if (score >= beta) {
+            free(scored_moves);
             return beta;
         }
 
@@ -291,10 +385,15 @@ int compare_guess_scores(const void* m1, const void* m2) {
 }
 
 int compare_evals(const void* m1, const void* m2) {
-    return -(((ScoredMove*)m1)->eval_score - ((ScoredMove*)m2)->eval_score);
+    int a = ((ScoredMove*)m1)->eval_score;
+    int b = ((ScoredMove*)m2)->eval_score;
+
+    if (a > b) return -1;  // descending order
+    if (a < b) return 1;
+    return 0;
 }
 
-int get_move_score(Board* board, Move move) {
+float get_move_score(Board* board, Move move) {
     PieceType from_piece = board_get_piece(move_get_from_index(move), board);
     PieceType to_piece = board_get_piece(move_get_to_index(move), board);
     
@@ -302,10 +401,10 @@ int get_move_score(Board* board, Move move) {
         return 0;
     }
 
-    int captured_value = get_piece_score(to_piece, board);
-    int from_value = get_piece_score(from_piece, board);
+    int captured_value = get_piece_value(to_piece, board);
+    int from_value = get_piece_value(from_piece, board);
 
-    return captured_value * 10 - from_value;
+    return (float) captured_value * 10 - (float) from_value;
 }
 
 void order_moves_by_guess(Board* board, ScoredMove* scored_moves, int move_count) {
@@ -333,6 +432,10 @@ void print_search_stats() {
         break;
     case ALHPA_BETA_ORDERED:
         printf("--- Alpha-beta ordered statistics ---\n");
+        break;
+    case ITERATIVE_DEEPENING:
+        printf("------- Iterative deepeniing --------\n");
+        break;
     
     default:
         break;

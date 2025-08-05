@@ -49,7 +49,7 @@ char* board_get_fen(Board* board) {
     return board_to_fen(board);
 }
 
-int board_evaluate_current(Board* board) {
+float board_evaluate_current(Board* board) {
     return evaluate_board(board);
 }
 
