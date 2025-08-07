@@ -193,7 +193,7 @@ class Gui:
             rank = i // 8
             file = i % 8
 
-            color = LIGHT_SQUARE if (rank + file) % 2 == 0 else DARK_SQUARE
+            color = DARK_SQUARE if (rank + file) % 2 == 0 else LIGHT_SQUARE
             total_length = length * 7
 
             buttons[i] = Button(file * length, total_length - rank * length, length, length, main_color=color)

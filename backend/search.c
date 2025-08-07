@@ -48,12 +48,13 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
 
     Move best_move = scored_moves[0].move;
 
-    int score = alpha_beta(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, depth, depth, &best_move);
+    //int score = alpha_beta(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, depth, depth, &best_move);
+    best_move = iterative_deepening(board, attack_table, depth);
 
     clock_t end_time = clock();
     elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
     best_move_found = best_move;
-    global_eval = board->turn ? score : -score;
+    //global_eval = board->turn ? score : -score;
 
     print_search_stats();
     free(scored_moves);
@@ -61,7 +62,33 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
     return best_move_found;
 }
 
+/*
+ * Updates global_eval.
+ */
+Move iterative_deepening(Board* board, AttackTable* attack_table, int depth) {
+    int move_count = 0;
+    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
+    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count);
+    free(legal_moves);
+    order_moves_by_guess(board, scored_moves, move_count);
 
+    Move current_best_move = scored_moves[0].move;
+
+    for (int current_depth = 1 ; current_depth <= depth ; current_depth++) {
+        int score = alpha_beta(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, 
+                               current_depth, current_depth, &current_best_move);
+
+        global_eval = score;
+    }
+    
+    return current_best_move;
+}
+
+
+/*
+ * Input best_move will be the first move evaluated during search. 
+ * Output best_move is the best move found by the search. 
+ */
 int alpha_beta(Board* board, AttackTable* attack_table, int alpha, int beta, int depth, int root_depth, Move* best_move) {
     if (depth == 0) {
         return search_captures_only(board, attack_table, alpha, beta, 0);
