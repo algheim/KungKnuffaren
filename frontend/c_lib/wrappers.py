@@ -130,7 +130,7 @@ def get_legal_moves_w(chess_lib, board, attack_table):
 
 def board_evaluate_current(chess_lib, board):
     chess_lib.board_evaluate_current.argtypes = [ctypes.POINTER(Board)]
-    chess_lib.board_evaluate_current.restype = ctypes.c_float
+    chess_lib.board_evaluate_current.restype = ctypes.c_int
 
     return chess_lib.board_evaluate_current(board)
 

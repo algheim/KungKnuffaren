@@ -5,8 +5,8 @@
 #include "board.h"
 
 // Returns how good the positioin is for white.
-float evaluate_board(Board* board);
+int evaluate_board(Board* board);
 
-int get_piece_value(uint64_t pieces, Board* board);
+int get_piece_value(PieceType type, Board* board);
 
 #endif

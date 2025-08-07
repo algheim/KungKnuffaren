@@ -36,7 +36,7 @@ Board* board_from_fen(char* fen, int size);
 
 char* board_get_fen(Board* board);
 
-float board_evaluate_current(Board* board);
+int board_evaluate_current(Board* board);
 
 void board_draw(Board* board);
 

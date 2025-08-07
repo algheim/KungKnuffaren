@@ -5,7 +5,7 @@ import pygame as p
 
 
 def make_enemy_move(chess_lib, board, attack_table):
-        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 4, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
+        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 5, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
         #wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
         ##best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.MIN_MAX)
         #best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ITERATIVE_DEEPENING)
