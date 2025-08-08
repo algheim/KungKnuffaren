@@ -19,6 +19,7 @@ OBJS = \
 	$(OBJ_PATH)evaluate.o \
 	$(OBJ_PATH)search.o \
 	$(OBJ_PATH)piece.o \
+	$(OBJ_PATH)transpositiontable.o \
 
 # Default target
 backend: $(BIN_PATH)kungknuffaren

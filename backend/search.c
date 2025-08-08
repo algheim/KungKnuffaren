@@ -13,6 +13,8 @@ typedef struct {
     int guess_score;
 } ScoredMove;
 
+
+
 static int positions_searched = 0;
 static double elapsed_time = -1;
 static Move best_move_found = -1;
