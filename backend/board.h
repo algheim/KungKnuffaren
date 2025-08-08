@@ -27,6 +27,7 @@ typedef struct board {
     UndoNode* undo_stack;
     int undo_stack_size;
     int undo_stack_capacity;
+    uint64_t current_zobrist_hash;
 } Board;
 
 
@@ -74,6 +75,14 @@ bool board_black_can_castle_queen(Board* board);
 void board_set_castling_rights(char side, bool value, Board* board);
 
 void board_destroy(Board* board);
+
+void zobrist_init();
+
+// This is the fast version based on incremental updates
+uint64_t board_get_zobrist_hash(Board* board);
+
+// For initializing zobrist hash and debugging
+uint64_t calculate_zobrist_hash(Board* board);
 
 
 #endif

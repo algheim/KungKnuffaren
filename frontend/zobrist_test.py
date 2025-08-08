@@ -42,8 +42,15 @@ def main():
             fen = wrappers.board_get_fen_w(chess_lib, board)
             legal_moves, _ = wrappers.get_legal_moves_w(chess_lib, board, attack_table)
             gui.update_board(board, legal_moves)
-            print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
+            #print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
 
+            absolute_hash = wrappers.calculate_zobrist_hash(chess_lib, board)
+            relative_hash = wrappers.board_get_zobrist_hash(chess_lib, board)
+
+            if absolute_hash == relative_hash:
+                 print("Absolute matches relative!!!", absolute_hash, relative_hash)
+            else:
+                 print("Absolute does not match relative!!!", absolute_hash, relative_hash)
 
         gui.draw_board(board)
 

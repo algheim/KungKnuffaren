@@ -94,7 +94,6 @@ class Gui:
         
         if self.event.type == p.KEYDOWN:
             if self.event.key == p.K_LEFT:
-
                 wrappers.board_pop_move(self.chess_lib, board)
                 wrappers.board_change_turn(self.chess_lib, board)
                 return True

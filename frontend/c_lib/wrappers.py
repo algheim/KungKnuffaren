@@ -53,6 +53,7 @@ class Board(ctypes.Structure):
         ("undo_stack", ctypes.POINTER(UndoNode)),
         ("undo_stack_size", ctypes.c_int),
         ("undo_stack_capacity", ctypes.c_int),
+        ("current_zobrist_hash", ctypes.c_uint64),
     ]
 
 
@@ -169,6 +170,26 @@ def attack_table_create_w(chess_lib):
 
     attack_table = chess_lib.attack_table_create()
     return attack_table
+
+# ---------------------------Zobrist hashing --------------------------------
+def zobrist_init(chess_lib):
+    chess_lib.zobrist_init.argtypes = []
+    chess_lib.zobrist_init.restype = None
+
+    chess_lib.zobrist_init()
+
+def board_get_zobrist_hash(chess_lib, board):
+    chess_lib.board_get_zobrist_hash.argtypes = [ctypes.POINTER(Board)]
+    chess_lib.board_get_zobrist_hash.restype = ctypes.c_uint64
+
+    return int(chess_lib.board_get_zobrist_hash(board))
+
+def calculate_zobrist_hash(chess_lib, board):
+    chess_lib.calculate_zobrist_hash.argtypes = [ctypes.POINTER(Board)]
+    chess_lib.calculate_zobrist_hash.restype = ctypes.c_uint64
+
+    return int(chess_lib.calculate_zobrist_hash(board))
+
 
 # ------------------------------ Moves --------------------------------------
 
