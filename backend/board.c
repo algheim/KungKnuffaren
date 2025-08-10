@@ -181,6 +181,10 @@ void board_draw(Board* board) {
 }
 
 void board_push_move(Move move, Board* board) {
+    if (!move_exists(move)) {
+        return;
+    }
+    
     undo_stack_push(move, board);
     int from_index = move_get_from_index(move);
     int to_index = move_get_to_index(move);

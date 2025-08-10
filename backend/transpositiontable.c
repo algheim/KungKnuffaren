@@ -1,18 +1,16 @@
 
 #include <stdlib.h>
 #include "transpositiointable.h"
+#include <stdio.h>
 
 
 static int nearest_power_of_two(int n);
-
 
 TTable* tt_create(int size_MB) {
     TTable* t_table = malloc(sizeof(TTable));
 
     int capacity = (size_MB * 1024ULL * 1024ULL) / sizeof(TTEntry);
-    capacity = nearest_power_of_two(capacity);
-
-    t_table->capacity = (size_MB * 1024ULL * 1024ULL) / sizeof(TTEntry);
+    t_table->capacity = nearest_power_of_two(capacity);
     t_table->data = calloc(t_table->capacity, sizeof(TTEntry));
     t_table->entry_count = 0;
     t_table->current_age = 0;
@@ -53,11 +51,11 @@ void tt_store(TTable* t_table, uint64_t zobrist_key, int depth, int score, TTEnt
 
 
 TTEntry* tt_lookup(TTable* t_table, uint64_t zobrist_key) {
-    uint64_t index = zobrist_key & (t_table->capacity - 1);
+    int index = zobrist_key & (t_table->capacity - 1);
     TTEntry* entry = &(t_table->data[index]);
 
     if (entry->is_active && entry->zobrist_key == zobrist_key) {
-        return entry; 
+        return &(t_table->data[index]);
     }
 
     return NULL;
@@ -72,6 +70,8 @@ void tt_destroy(TTable* t_table) {
 
 static int nearest_power_of_two(int n) {
     int p = 1;
-    while (p * 2 <= n) p *= 2;
+    while (p * 2 <= n) {
+        p *= 2;
+    }
     return p;
 }

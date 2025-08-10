@@ -6,6 +6,7 @@ venv/
 .DS_Store
 
 test.c
+old.txt
 makefile_test
 recompile.sh
 todo.md

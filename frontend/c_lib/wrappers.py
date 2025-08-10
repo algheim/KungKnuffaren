@@ -34,6 +34,7 @@ class SearchAlg(IntEnum):
     ALPHA_BETA_ORDERED = 2
     ITERATIVE_DEEPENING = 3
 
+
 class UndoNode(ctypes.Structure):
     _fields_ = [
         ("move", ctypes.c_uint16),
@@ -78,6 +79,31 @@ class ScoredMove(ctypes.Structure):
         ("eval_score", ctypes.c_int),
         ("guess_score", ctypes.c_int),
     ]
+
+class TTEntry(ctypes.Structure):
+    _fields_ = [
+        ("is_active", ctypes.c_bool),
+        ("zobrist_key", ctypes.c_uint64),
+        ("entry_type", ctypes.c_int),  # enum as int
+        ("score", ctypes.c_int),
+        ("depth", ctypes.c_int),
+        ("age", ctypes.c_int),
+        ("best_move", ctypes.c_uint16),  # assuming Move is uint16
+    ]
+
+class TTable(ctypes.Structure):
+    _fields_ = [
+        ("capacity", ctypes.c_int),
+        ("entry_count", ctypes.c_int),
+        ("current_age", ctypes.c_int),
+        ("data", ctypes.POINTER(TTEntry)),
+    ]
+
+def tt_create(chess_lib, size_MB):
+    chess_lib.tt_create.argtypes = [ctypes.c_int]
+    chess_lib.tt_create.restype = ctypes.POINTER(TTable)
+
+    return chess_lib.tt_create(ctypes.c_int(size_MB))
 
 
 def board_create_w(chess_lib):
@@ -158,11 +184,12 @@ def board_get_fen_w(chess_lib, board):
     fen_ptr = chess_lib.board_get_fen(board)
     return ctypes.string_at(fen_ptr).decode('utf-8')
 
-def search_best_move(chess_lib, board, attack_table, depth, algorithm):
-    chess_lib.search_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.c_int, ctypes.c_int]
+def search_best_move(chess_lib, board, attack_table, t_table, depth, algorithm):
+    chess_lib.search_best_move.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), 
+                                           ctypes.POINTER(TTable), ctypes.c_int, ctypes.c_int]
     chess_lib.search_best_move.restype = ctypes.c_uint16
 
-    return chess_lib.search_best_move(board, attack_table, ctypes.c_int(depth), algorithm)
+    return chess_lib.search_best_move(board, attack_table, t_table, ctypes.c_int(depth), algorithm)
 
 def attack_table_create_w(chess_lib):
     chess_lib.attack_table_create.argtypes = []

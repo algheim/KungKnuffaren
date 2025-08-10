@@ -6,9 +6,9 @@
 #include "move.h"
 
 typedef enum {
-    ALPHA_ENTRY,
-    BETA_ENTRY,
-    EXACT_ENTRY,
+    TT_EXACT,
+    TT_UPPER_BOUND,
+    TT_LOWER_BOUND
 } TTEntryType;
 
 typedef struct {

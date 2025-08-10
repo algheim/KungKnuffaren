@@ -4,8 +4,8 @@ from gui import Gui
 import pygame as p
 
 
-def make_enemy_move(chess_lib, board, attack_table):
-        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 5, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
+def make_enemy_move(chess_lib, board, attack_table, t_table):
+        best_move = wrappers.search_best_move(chess_lib, board, attack_table, t_table, 5, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
         #wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ALPHA_BETA)
         ##best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.MIN_MAX)
         #best_move = wrappers.search_best_move(chess_lib, board, attack_table, 3, wrappers.SearchAlg.ITERATIVE_DEEPENING)
@@ -30,8 +30,9 @@ def main():
     fen2 = "rnbq1b1r/pppppppp/4n1k1/B7/3P1P2/4P3/PPP3PP/RNBQK1NR w KQ - 0 1"
     fen3 = "r4k1r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/5Q1p/PPPBBPPP/RN2K2R w QK - 0 0"
     board = wrappers.board_from_fen_w(chess_lib, start_fen)
-    #wrappers.board_set_start_w(chess_lib, board)
+
     attack_table = wrappers.attack_table_create_w(chess_lib)
+    t_table = wrappers.tt_create(chess_lib, 200)
     gui.draw_board(board)
 
     while True:
@@ -45,7 +46,7 @@ def main():
             print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
 
             if not board.contents.turn:
-                make_enemy_move(chess_lib, board, attack_table)
+                make_enemy_move(chess_lib, board, attack_table, t_table)
 
         gui.draw_board(board)
 
