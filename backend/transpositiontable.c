@@ -50,11 +50,13 @@ void tt_store(TTable* t_table, uint64_t zobrist_key, int depth, int score, TTEnt
 }
 
 
-TTEntry* tt_lookup(TTable* t_table, uint64_t zobrist_key) {
+TTEntry* tt_lookup(TTable* t_table, uint64_t zobrist_key, int* tt_hits, int* tt_lookups) {
     int index = zobrist_key & (t_table->capacity - 1);
     TTEntry* entry = &(t_table->data[index]);
+    (*tt_lookups)++;
 
     if (entry->is_active && entry->zobrist_key == zobrist_key) {
+        (*tt_hits)++;
         return &(t_table->data[index]);
     }
 

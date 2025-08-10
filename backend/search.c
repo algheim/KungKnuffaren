@@ -25,10 +25,14 @@ typedef struct {
 } SearchParams;
 
 static int positions_searched = 0;
+static int quiescence_searched = 0;
 static double elapsed_time = -1;
 static Move best_move_found = -1;
 static SearchAlg current_algorithm = -1;
 static int global_eval = 0;
+static int tt_hits = 0;
+static int tt_pruning_hits = 0;
+static int tt_lookups = 0;
 
 // Main search
 int alpha_beta(SearchParams params);
@@ -74,6 +78,7 @@ Move search_best_move(Board* board, AttackTable* attack_table, TTable* t_table, 
     free(scored_moves);
 
     t_table->current_age++;
+    printf("CAPACITY: %d\n", t_table->capacity);
 
     return best_move_found;
 }
@@ -124,10 +129,12 @@ int alpha_beta(SearchParams params) {
     int original_beta = params.beta;
 
     uint64_t current_hash = board_get_zobrist_hash(params.board);
-    TTEntry* tt_entry = tt_lookup(params.t_table, current_hash);
+    TTEntry* tt_entry = tt_lookup(params.t_table, current_hash, &tt_hits, &tt_lookups);
 
+    // We only trust entries from the current search for cutoffs, because older entries might 
+    // have been searched in a different search window.
     if (tt_entry && tt_entry->depth >= params.depth && tt_entry->age == params.t_table->current_age) {
-
+        tt_pruning_hits++;
         if (tt_entry->entry_type == TT_EXACT) {
             return tt_entry->score;
         }
@@ -138,6 +145,7 @@ int alpha_beta(SearchParams params) {
             return tt_entry->score;
         }
     }
+    // We still trust the best_move for move ordering from older searches.
     if (tt_entry && move_exists(tt_entry->best_move) && params.depth != params.root_depth) {
         *(params.best_move) = tt_entry->best_move;
     }
@@ -211,19 +219,21 @@ int alpha_beta(SearchParams params) {
     if (params.best_move) {
         tt_store(params.t_table, current_hash, params.depth, params.alpha, type, *(params.best_move));
     }
-    tt_store(params.t_table, current_hash, params.depth, params.alpha, type, move_create(0, 0, 0));
+    else {
+        tt_store(params.t_table, current_hash, params.depth, params.alpha, type, move_create(0, 0, 0));
+    }
 
     return params.alpha;
 }
 
 
 int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_table, int alpha, int beta, int depth) {
-    positions_searched++;
+    quiescence_searched++;
     int original_alpha = alpha;
     int original_beta = beta;
 
     uint64_t current_hash = board_get_zobrist_hash(board);
-    TTEntry* tt_entry = tt_lookup(t_table, current_hash);
+    TTEntry* tt_entry = tt_lookup(t_table, current_hash, &tt_hits, &tt_lookups);
 
     if (tt_entry && tt_entry->age == t_table->current_age) {
         if (tt_entry->entry_type == TT_EXACT) {
@@ -236,6 +246,7 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
             return tt_entry->score;
         }
     }
+
 
     int score = board_evaluate_current(board);
     score = board->turn ? score : -score;
@@ -257,7 +268,9 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
 
     ScoredMove* scored_moves = get_scored_moves(board, legal_captures, move_count);
     free(legal_captures);
-    order_moves_by_guess(board, scored_moves, move_count, NULL);
+
+    Move* best_move = (tt_entry && move_exists(tt_entry->best_move)) ? &(tt_entry->best_move) : NULL;
+    order_moves_by_guess(board, scored_moves, move_count, best_move);
 
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(scored_moves[i].move, board);
@@ -372,6 +385,7 @@ void print_scored_move(ScoredMove move) {
 void reset_search_stats(SearchAlg alg) {
     current_algorithm = alg;
     positions_searched = 0;
+    quiescence_searched = 0;
     best_move_found = move_create(0, 0, 0);
     global_eval = 0;
 }
@@ -399,8 +413,17 @@ void print_search_stats() {
     }
 
     printf("Positions searched: \t%d\n", positions_searched);
+    printf("quiesence searched: \t%d\n", quiescence_searched);
+    printf("Total searched: \t%d\n", quiescence_searched + positions_searched);
     printf("Time: \t\t\t%.3f\n", elapsed_time);
     printf("Positions/s: \t\t%.f\n", positions_searched / elapsed_time);
     printf("Eval: \t\t\t%.3f\n", global_eval / 100.0);
     printf("Best move from->to: \t%d->%d\n", move_get_from_index(best_move_found), move_get_to_index(best_move_found));
+
+    // Transposition table:
+    float hit_rate = tt_lookups > 0 ? (100.0 * tt_hits / tt_lookups) : 0.0;
+    float pruning_hit_rate = tt_hits > 0 ? (100.0 * tt_pruning_hits / tt_hits) : 0.0;
+    printf("TT lookups: \t\t%d\n", tt_lookups);
+    printf("TT hits: \t\t%d (%.2f%%)\n", tt_hits, hit_rate);
+    printf("TT pruning hits: \t%d (%.2f%% of hits)\n", tt_pruning_hits, pruning_hit_rate);
 }

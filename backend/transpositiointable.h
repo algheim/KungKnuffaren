@@ -32,7 +32,7 @@ TTable* tt_create(int size_MB);
 
 void tt_store(TTable* t_table, uint64_t zobrist_key, int depth, int score, TTEntryType type, Move best_move);
 
-TTEntry* tt_lookup(TTable* t_table, uint64_t zobrist_key);
+TTEntry* tt_lookup(TTable* t_table, uint64_t zobrist_key, int* tt_hits, int* tt_lookups);
 
 void tt_destroy(TTable* t_table);
 
