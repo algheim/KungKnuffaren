@@ -4,8 +4,8 @@ from gui import Gui
 import pygame as p
 
 
-def make_enemy_move(chess_lib, board, attack_table, t_table):
-        best_move = wrappers.search_best_move(chess_lib, board, attack_table, t_table, 6, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
+def make_enemy_move(chess_lib, board, attack_table):
+        best_move = wrappers.search_best_move(chess_lib, board, attack_table, 4, wrappers.SearchAlg.ALPHA_BETA_ORDERED)
 
         if not wrappers.move_exists(chess_lib, best_move):
              print("I lost!!")
@@ -29,7 +29,6 @@ def main():
     board = wrappers.board_from_fen_w(chess_lib, start_fen)
 
     attack_table = wrappers.attack_table_create_w(chess_lib)
-    t_table = wrappers.tt_create(chess_lib, 200)
     gui.draw_board(board)
 
     while True:
@@ -43,7 +42,9 @@ def main():
             print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
 
             if not board.contents.turn:
-                make_enemy_move(chess_lib, board, attack_table, t_table)
+                make_enemy_move(chess_lib, board, attack_table)
+
+            #print("zobrist keys matching:", wrappers.calculate_zobrist_hash(chess_lib, board) == wrappers.board_get_zobrist_hash(chess_lib, board))
 
         gui.draw_board(board)
 

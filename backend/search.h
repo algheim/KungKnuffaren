@@ -14,6 +14,6 @@ typedef enum {
 
 
 
-Move search_best_move(Board* board, AttackTable* attack_table, TTable* t_table, int depth, SearchAlg alg);
+Move search_best_move(Board* board, AttackTable* attack_table, int depth, SearchAlg alg);
 
 #endif

@@ -37,7 +37,7 @@ static int tt_lookups = 0;
 // Main search
 int alpha_beta(SearchParams params);
 int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_table, int alpha, int beta, int depth);
-Move iterative_deepening(Board* board, AttackTable* attack_table, int depth, TTable* t_table);
+Move iterative_deepening(Board* board, AttackTable* attack_table, int depth);
 int search_with_tt(SearchParams params, int original_alpha, int original_beta);
 
 // Move ordering
@@ -54,7 +54,7 @@ void print_search_stats();
 void print_scored_move(ScoredMove move);
 
 
-Move search_best_move(Board* board, AttackTable* attack_table, TTable* t_table, int depth, SearchAlg alg) {
+Move search_best_move(Board* board, AttackTable* attack_table, int depth, SearchAlg alg) {
     clock_t start_time = clock();
     reset_search_stats(alg);
     int move_count = 0;
@@ -67,7 +67,7 @@ Move search_best_move(Board* board, AttackTable* attack_table, TTable* t_table, 
     Move best_move = scored_moves[0].move;
 
     //int score = alpha_beta(board, attack_table, LARGE_NEGATIVE, LARGE_POSITIVE, depth, depth, &best_move);
-    best_move = iterative_deepening(board, attack_table, depth, t_table);
+    best_move = iterative_deepening(board, attack_table, depth);
 
     clock_t end_time = clock();
     elapsed_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -77,21 +77,19 @@ Move search_best_move(Board* board, AttackTable* attack_table, TTable* t_table, 
     print_search_stats();
     free(scored_moves);
 
-    t_table->current_age++;
-    printf("CAPACITY: %d\n", t_table->capacity);
-
     return best_move_found;
 }
 
 /*
  * Updates global_eval.
  */
-Move iterative_deepening(Board* board, AttackTable* attack_table, int depth, TTable* t_table) {
+Move iterative_deepening(Board* board, AttackTable* attack_table, int depth) {
     int move_count = 0;
     Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
     ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count);
     free(legal_moves);
     order_moves_by_guess(board, scored_moves, move_count, NULL);
+    TTable* t_table = tt_create(200);
 
     Move current_best_move = scored_moves[0].move;
 
@@ -111,6 +109,7 @@ Move iterative_deepening(Board* board, AttackTable* attack_table, int depth, TTa
         global_eval = board->turn ? score : -score;
     }
     
+    tt_destroy(t_table);
     return current_best_move;
 }
 
@@ -125,27 +124,27 @@ int alpha_beta(SearchParams params) {
     }
 
     positions_searched++;
-    int original_alpha = params.alpha;
-    int original_beta = params.beta;
+    //int original_alpha = params.alpha;
+    //int original_beta = params.beta;
 
     uint64_t current_hash = board_get_zobrist_hash(params.board);
     TTEntry* tt_entry = tt_lookup(params.t_table, current_hash, &tt_hits, &tt_lookups);
+    TTEntryType entry_type = TT_UPPER_BOUND;
 
-    // We only trust entries from the current search for cutoffs, because older entries might 
-    // have been searched in a different search window.
-    if (tt_entry && tt_entry->depth >= params.depth && tt_entry->age == params.t_table->current_age) {
-        tt_pruning_hits++;
+    if (tt_entry && tt_entry->depth >= params.depth) {
         if (tt_entry->entry_type == TT_EXACT) {
+            tt_pruning_hits++;
             return tt_entry->score;
         }
-        if (tt_entry->entry_type == TT_UPPER_BOUND && tt_entry->score < params.alpha) {
-            return tt_entry->score;
+        if (tt_entry->entry_type == TT_UPPER_BOUND && tt_entry->score <= params.alpha) {
+            tt_pruning_hits++;
+            return params.alpha;
         }
         if (tt_entry->entry_type == TT_LOWER_BOUND && tt_entry->score >= params.beta) {
-            return tt_entry->score;
+            tt_pruning_hits++;
+            return params.beta;
         }
     }
-    // We still trust the best_move for move ordering from older searches.
     if (tt_entry && move_exists(tt_entry->best_move) && params.depth != params.root_depth) {
         *(params.best_move) = tt_entry->best_move;
     }
@@ -189,10 +188,12 @@ int alpha_beta(SearchParams params) {
                 *(params.best_move) = scored_moves[i].move;
             }
             board_change_turn(params.board);
+            tt_store(params.t_table, current_hash, params.depth, score, TT_LOWER_BOUND, move_create(0, 0, 0));
             return params.beta;
         }
 
         if (score > params.alpha) {
+            entry_type = TT_EXACT;
             params.alpha = score;
             if (params.depth == params.root_depth) {
                 *(params.best_move) = scored_moves[i].move;
@@ -202,25 +203,11 @@ int alpha_beta(SearchParams params) {
     free(scored_moves);
     board_change_turn(params.board);
 
-    TTEntryType type;
-    if (params.alpha <= original_alpha) {
-        // The search didn't find a move better than prev alpha, so no such scores can exist.
-        type = TT_UPPER_BOUND;
-    }
-    else if (params.alpha >= original_beta) {
-        // A beta cutoff occurred, so the score is a lower bound of the true score.
-        type = TT_LOWER_BOUND;
-    }
-    else {
-        // The search raised alpha without a beta-cutoff, so the score is exact.
-        type = TT_EXACT;
-    }
-
     if (params.best_move) {
-        tt_store(params.t_table, current_hash, params.depth, params.alpha, type, *(params.best_move));
+        tt_store(params.t_table, current_hash, params.depth, params.alpha, entry_type, *(params.best_move));
     }
     else {
-        tt_store(params.t_table, current_hash, params.depth, params.alpha, type, move_create(0, 0, 0));
+        tt_store(params.t_table, current_hash, params.depth, params.alpha, entry_type, move_create(0, 0, 0));
     }
 
     return params.alpha;
@@ -229,24 +216,25 @@ int alpha_beta(SearchParams params) {
 
 int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_table, int alpha, int beta, int depth) {
     quiescence_searched++;
-    int original_alpha = alpha;
-    int original_beta = beta;
 
     uint64_t current_hash = board_get_zobrist_hash(board);
     TTEntry* tt_entry = tt_lookup(t_table, current_hash, &tt_hits, &tt_lookups);
+    TTEntryType entry_type = TT_UPPER_BOUND;
 
-    if (tt_entry && tt_entry->age == t_table->current_age) {
+    if (tt_entry) {
         if (tt_entry->entry_type == TT_EXACT) {
+            tt_pruning_hits++;
             return tt_entry->score;
         }
-        if (tt_entry->entry_type == TT_UPPER_BOUND && tt_entry->score < alpha) {
-            return tt_entry->score;
+        if (tt_entry->entry_type == TT_UPPER_BOUND && tt_entry->score <= alpha) {
+            tt_pruning_hits++;
+            return alpha;
         }
         if (tt_entry->entry_type == TT_LOWER_BOUND && tt_entry->score >= beta) {
-            return tt_entry->score;
+            tt_pruning_hits++;
+            return beta;
         }
     }
-
 
     int score = board_evaluate_current(board);
     score = board->turn ? score : -score;
@@ -257,6 +245,7 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
 
     if (score > alpha) {
         alpha = score;
+        entry_type = TT_EXACT;
     }
 
     int move_count = 0;
@@ -269,44 +258,31 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
     ScoredMove* scored_moves = get_scored_moves(board, legal_captures, move_count);
     free(legal_captures);
 
-    Move* best_move = (tt_entry && move_exists(tt_entry->best_move)) ? &(tt_entry->best_move) : NULL;
-    order_moves_by_guess(board, scored_moves, move_count, best_move);
+    //Move* best_move = (tt_entry && move_exists(tt_entry->best_move)) ? &(tt_entry->best_move) : NULL;
+    order_moves_by_guess(board, scored_moves, move_count, NULL);
 
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(scored_moves[i].move, board);
         board_change_turn(board);
-
         score = -search_captures_only(board, attack_table, t_table, -beta, -alpha, depth + 1);
         board_pop_move(board);
         board_change_turn(board);
 
         if (score >= beta) {
             free(scored_moves);
+            tt_store(t_table, current_hash, -1, score, TT_LOWER_BOUND, move_create(0, 0, 0));
             return beta;
         }
 
         if (score > alpha) {
+            entry_type = TT_EXACT;
             alpha = score;
         }
     }
 
-    TTEntryType type;
-    if (alpha <= original_alpha) {
-        // The search didn't find a move better than prev alpha, so no such scores can exist.
-        type = TT_UPPER_BOUND;
-    }
-    else if (alpha >= original_beta) {
-        // A beta cutoff occurred, so the score is a lower bound of the true score.
-        type = TT_LOWER_BOUND;
-    }
-    else {
-        // The search raised alpha without a beta-cutoff, so the score is exact.
-        type = TT_EXACT;
-    }
-    
-    tt_store(t_table, current_hash, -1, alpha, type, move_create(0, 0, 0));
-
     free(scored_moves);
+
+    tt_store(t_table, current_hash, -1, alpha, entry_type, move_create(0, 0, 0));
 
     return alpha;
 }
@@ -382,6 +358,7 @@ void print_scored_move(ScoredMove move) {
 }
 
 
+// The TT stats shouldn't be reset because the TT is permanent between searches!
 void reset_search_stats(SearchAlg alg) {
     current_algorithm = alg;
     positions_searched = 0;
@@ -412,11 +389,14 @@ void print_search_stats() {
             break;
     }
 
-    printf("Positions searched: \t%d\n", positions_searched);
-    printf("quiesence searched: \t%d\n", quiescence_searched);
-    printf("Total searched: \t%d\n", quiescence_searched + positions_searched);
+    int total_searched = positions_searched + quiescence_searched;
+    printf("Positions searched: \t%d (%.2f%%)\n", positions_searched, 100.0 * positions_searched / total_searched);
+    printf("Quiescence searched: \t%d (%.2f%%)\n", quiescence_searched, 100.0 * quiescence_searched / total_searched);
+    printf("Total searched: \t%d\n", total_searched);
+
     printf("Time: \t\t\t%.3f\n", elapsed_time);
     printf("Positions/s: \t\t%.f\n", positions_searched / elapsed_time);
+
     printf("Eval: \t\t\t%.3f\n", global_eval / 100.0);
     printf("Best move from->to: \t%d->%d\n", move_get_from_index(best_move_found), move_get_to_index(best_move_found));
 

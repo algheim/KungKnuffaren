@@ -26,16 +26,10 @@ void tt_store(TTable* t_table, uint64_t zobrist_key, int depth, int score, TTEnt
     // For some reason this is the same as zobrist_key % capacity :o
     int index = zobrist_key & (t_table->capacity - 1);
 
-    if (t_table->data[index].is_active) {
-        if (t_table->data[index].age == t_table->current_age) {
-            if (t_table->data[index].depth > depth) {
-                return;
-            }
-        } else if (t_table->data[index].age > t_table->current_age) {
-            return;
-        }
+    if (t_table->data[index].is_active && t_table->data[index].depth > depth) {
+        return;
     }
-
+    
     TTEntry new_entry = (TTEntry) {
         .zobrist_key = zobrist_key,
         .entry_type = type,
@@ -57,7 +51,7 @@ TTEntry* tt_lookup(TTable* t_table, uint64_t zobrist_key, int* tt_hits, int* tt_
 
     if (entry->is_active && entry->zobrist_key == zobrist_key) {
         (*tt_hits)++;
-        return &(t_table->data[index]);
+        return entry;
     }
 
     return NULL;
