@@ -1,5 +1,6 @@
 #include "search.h"
 #include "evaluate.h"
+#include "bitboard.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -35,23 +36,30 @@ static int tt_pruning_hits = 0;
 static int tt_lookups = 0;
 
 // Main search
-int alpha_beta(SearchParams params);
+int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Move* best_move);
 int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_table, int alpha, int beta, int depth);
 Move iterative_deepening(Board* board, AttackTable* attack_table, int depth);
 int search_with_tt(SearchParams params, int original_alpha, int original_beta);
 
 // Move ordering
-ScoredMove* get_scored_moves(Board* board, Move* moves, int move_count);
-int get_move_score(Board* board, Move move);
+ScoredMove* get_scored_moves(Board* board, Move* moves, int move_count, int depth);
+int get_move_score(Board* board, Move move, int depth);
 void order_moves_by_guess(Board* board, ScoredMove* scored_moves, int move_count, Move* best_move);
 void order_moves_by_eval(Board* board, ScoredMove* scored_moves, int move_count);
 int compare_guess_scores(const void* m1, const void* m2);
 int compare_evals(const void* m1, const void* m2);
+void store_killer(int ply, Move move);
+bool move_is_killer(int ply, Move move);
 
 // Search stats
 void reset_search_stats(SearchAlg alg);
 void print_search_stats();
 void print_scored_move(ScoredMove move);
+
+#define MAX_DEPTH 50
+#define KILLER_COUNT 2
+
+Move killer_moves[MAX_DEPTH][KILLER_COUNT];
 
 
 Move search_best_move(Board* board, AttackTable* attack_table, int depth, SearchAlg alg) {
@@ -59,8 +67,15 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
     reset_search_stats(alg);
     int move_count = 0;
 
-    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
-    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count);
+    for (int i = 0 ; i < MAX_DEPTH ; i++) {
+        for (int j = 0 ; j < KILLER_COUNT ; j++) {
+            killer_moves[i][j] = move_create(0, 0 ,0);
+        }
+    }
+
+    uint64_t attacked_squares = 0ULL;
+    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count, &attacked_squares);
+    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count, 0);
     free(legal_moves);
     order_moves_by_guess(board, scored_moves, move_count, NULL);
 
@@ -85,8 +100,9 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
  */
 Move iterative_deepening(Board* board, AttackTable* attack_table, int depth) {
     int move_count = 0;
-    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count);
-    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count);
+    uint64_t attacked_squares = 0ULL;
+    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count, &attacked_squares);
+    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count, 0);
     free(legal_moves);
     order_moves_by_guess(board, scored_moves, move_count, NULL);
     TTable* t_table = tt_create(200);
@@ -98,13 +114,9 @@ Move iterative_deepening(Board* board, AttackTable* attack_table, int depth) {
             .board = board,
             .attack_table = attack_table,
             .t_table = t_table,
-            .alpha = LARGE_NEGATIVE,
-            .beta = LARGE_POSITIVE,
-            .depth = current_depth,
             .root_depth = current_depth,
-            .best_move = &current_best_move,
         };
-        int score = alpha_beta(params);
+        int score = alpha_beta(params, LARGE_NEGATIVE, LARGE_POSITIVE, current_depth, 0, &current_best_move);
 
         global_eval = board->turn ? score : -score;
     }
@@ -118,99 +130,89 @@ Move iterative_deepening(Board* board, AttackTable* attack_table, int depth) {
  * Input best_move will be the first move evaluated during search. 
  * Output best_move is the best move found by the search. 
  */
-int alpha_beta(SearchParams params) {
-    if (params.depth == 0) {
-        return search_captures_only(params.board, params.attack_table, params.t_table, params.alpha, params.beta, 0);
+int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Move* best_move) {
+    if (depth == 0) {
+        return search_captures_only(params.board, params.attack_table, params.t_table, alpha, beta, 0);
     }
-
     positions_searched++;
-    //int original_alpha = params.alpha;
-    //int original_beta = params.beta;
 
     uint64_t current_hash = board_get_zobrist_hash(params.board);
     TTEntry* tt_entry = tt_lookup(params.t_table, current_hash, &tt_hits, &tt_lookups);
     TTEntryType entry_type = TT_UPPER_BOUND;
 
-    if (tt_entry && tt_entry->depth >= params.depth) {
+    if (tt_entry && tt_entry->depth >= depth) {
         if (tt_entry->entry_type == TT_EXACT) {
             tt_pruning_hits++;
             return tt_entry->score;
         }
-        if (tt_entry->entry_type == TT_UPPER_BOUND && tt_entry->score <= params.alpha) {
+        if (tt_entry->entry_type == TT_UPPER_BOUND && tt_entry->score <= alpha) {
             tt_pruning_hits++;
-            return params.alpha;
+            return alpha;
         }
-        if (tt_entry->entry_type == TT_LOWER_BOUND && tt_entry->score >= params.beta) {
+        if (tt_entry->entry_type == TT_LOWER_BOUND && tt_entry->score >= beta) {
             tt_pruning_hits++;
-            return params.beta;
+            return beta;
         }
     }
-    if (tt_entry && move_exists(tt_entry->best_move) && params.depth != params.root_depth) {
-        *(params.best_move) = tt_entry->best_move;
+    if (tt_entry && move_exists(tt_entry->best_move) && depth != params.root_depth) {
+        *best_move = tt_entry->best_move;
     }
 
     // Generate moves
+    uint64_t attacked_squares = 0ULL;
     int move_count = 0;
-    Move* legal_moves = board_get_legal_moves(params.board, params.attack_table, &move_count);
+    Move* legal_moves = board_get_legal_moves(params.board, params.attack_table, &move_count, &attacked_squares);
     if (move_count == 0) {
-        if (params.root_depth == params.depth) {
-            *(params.best_move) = move_create(0, 0, 0);
+        if (params.root_depth == depth) {
+            *best_move = move_create(0, 0, 0);
         }
         free(legal_moves);
         return LARGE_NEGATIVE;
     }
-    ScoredMove* scored_moves = get_scored_moves(params.board, legal_moves, move_count);
+    ScoredMove* scored_moves = get_scored_moves(params.board, legal_moves, move_count, ply);
     free(legal_moves);
 
     // Evaluate moves in guess-order with best_move first if it exists:
-    order_moves_by_guess(params.board, scored_moves, move_count, params.best_move);
+    order_moves_by_guess(params.board, scored_moves, move_count, best_move);
     board_change_turn(params.board);
     for (int i = 0 ; i < move_count ; i++) {
         board_push_move(scored_moves[i].move, params.board);
 
-        SearchParams updated_params = (SearchParams) {
-            .board = params.board,
-            .attack_table = params.attack_table,
-            .t_table = params.t_table,
-            .alpha = -params.beta,
-            .beta = -params.alpha,
-            .depth = params.depth - 1,
-            .root_depth = params.root_depth,
-            .best_move = NULL
-        };
-
-        int score = -alpha_beta(updated_params);
+        int score = -alpha_beta(params, -beta, -alpha, depth -1, ply + 1, NULL);
         board_pop_move(params.board);
 
-        if (score >= params.beta) {
-            // This should not happen unless something goes wrong..
-            if (params.depth == params.root_depth) {
-                *(params.best_move) = scored_moves[i].move;
+        if (score >= beta) {
+            // This only happens if a mate is found at root level
+            if (depth == params.root_depth) {
+                *best_move = scored_moves[i].move;
+            }
+            if (board_get_piece(scored_moves[i].move, params.board) == -1) {
+                store_killer(depth, scored_moves[i].move);
             }
             board_change_turn(params.board);
-            tt_store(params.t_table, current_hash, params.depth, score, TT_LOWER_BOUND, move_create(0, 0, 0));
-            return params.beta;
+            tt_store(params.t_table, current_hash, depth, score, TT_LOWER_BOUND, move_create(0, 0, 0));
+            return beta;
         }
 
-        if (score > params.alpha) {
+        if (score > alpha) {
             entry_type = TT_EXACT;
-            params.alpha = score;
-            if (params.depth == params.root_depth) {
-                *(params.best_move) = scored_moves[i].move;
+            alpha = score;
+            if (depth == params.root_depth) {
+                *best_move = scored_moves[i].move;
             }
         }
     }
     free(scored_moves);
     board_change_turn(params.board);
 
-    if (params.best_move) {
-        tt_store(params.t_table, current_hash, params.depth, params.alpha, entry_type, *(params.best_move));
+    if (best_move) {
+        tt_store(params.t_table, current_hash, depth, alpha, entry_type, *best_move);
     }
     else {
-        tt_store(params.t_table, current_hash, params.depth, params.alpha, entry_type, move_create(0, 0, 0));
+        tt_store(params.t_table, current_hash, depth, alpha, entry_type, move_create(0, 0, 0));
     }
 
-    return params.alpha;
+    return alpha;
 }
 
 
@@ -248,14 +250,15 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
         entry_type = TT_EXACT;
     }
 
+    uint64_t attacked_squares = 0ULL;
     int move_count = 0;
-    Move* legal_captures = board_get_legal_captures(board, attack_table, &move_count);
+    Move* legal_captures = board_get_legal_captures(board, attack_table, &move_count, &attacked_squares);
 
     if (move_count == 0) {
         return score;
     }
 
-    ScoredMove* scored_moves = get_scored_moves(board, legal_captures, move_count);
+    ScoredMove* scored_moves = get_scored_moves(board, legal_captures, move_count, 0);
     free(legal_captures);
 
     //Move* best_move = (tt_entry && move_exists(tt_entry->best_move)) ? &(tt_entry->best_move) : NULL;
@@ -287,24 +290,39 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
     return alpha;
 }
 
+void store_killer(int ply, Move move) {
+    if (killer_moves[ply][0] != move) {
+        killer_moves[ply][1] = killer_moves[ply][0];
+        killer_moves[ply][0] = move;
+    }
+}
 
-ScoredMove* get_scored_moves(Board* board, Move* moves, int move_count) {
+bool move_is_killer(int ply, Move move) {
+    return killer_moves[ply][0] == move || killer_moves[ply][1] == move;
+}
+
+ScoredMove* get_scored_moves(Board* board, Move* moves, int move_count, int ply) {
     ScoredMove* scored_moves = calloc(move_count, sizeof(ScoredMove));
 
     for (int i = 0 ; i < move_count ; i++) {
         scored_moves[i].move = moves[i];
-        scored_moves[i].guess_score = get_move_score(board, scored_moves[i].move);
+        scored_moves[i].guess_score = get_move_score(board, scored_moves[i].move, ply);
     }
 
     return scored_moves;
 }
 
-int get_move_score(Board* board, Move move) {
+int get_move_score(Board* board, Move move, int ply) {
     PieceType from_piece = board_get_piece(move_get_from_index(move), board);
     PieceType to_piece = board_get_piece(move_get_to_index(move), board);
     
     if (to_piece == -1) {
-        return 0;
+        if (move_is_killer(ply, move)) {
+            return 300;
+        }
+        else {
+            return 0;
+        }
     }
 
     int captured_value = get_piece_value(to_piece, board);
@@ -314,9 +332,6 @@ int get_move_score(Board* board, Move move) {
 }
 
 void order_moves_by_guess(Board* board, ScoredMove* scored_moves, int move_count, Move* best_move) {
-    for (int i = 0 ; i < move_count ; i++) {
-        scored_moves[i].guess_score = get_move_score(board, scored_moves[i].move);
-    }
 
     if (best_move && move_count > 1) {
         for (int i = 0 ; i < move_count ; i++) {
@@ -406,4 +421,21 @@ void print_search_stats() {
     printf("TT lookups: \t\t%d\n", tt_lookups);
     printf("TT hits: \t\t%d (%.2f%%)\n", tt_hits, hit_rate);
     printf("TT pruning hits: \t%d (%.2f%% of hits)\n", tt_pruning_hits, pruning_hit_rate);
+}
+
+
+void test_search(Board* board, AttackTable* attack_table) {
+    int move_count = 0;
+    uint64_t attacked_squares = 0ULL;
+    Move* legal_moves = board_get_legal_moves(board, attack_table, &move_count, &attacked_squares);
+    ScoredMove* scored_moves = get_scored_moves(board, legal_moves, move_count ,0);
+    free(legal_moves);
+
+
+    Move best_move = move_create(11, 2, 0);
+    order_moves_by_guess(board, scored_moves, move_count, &best_move);
+
+    for (int i = 0 ; i < move_count ; i++) {
+        print_scored_move(scored_moves[i]);
+    }
 }

@@ -159,11 +159,13 @@ def board_pop_move(chess_lib, board):
 
 
 def get_legal_moves_w(chess_lib, board, attack_table):
-    chess_lib.get_legal_moves.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), ctypes.POINTER(ctypes.c_int)]
+    chess_lib.get_legal_moves.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable), 
+                                          ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_uint64)]
     chess_lib.get_legal_moves.restype = ctypes.POINTER(ctypes.c_uint16)
 
     move_count = ctypes.c_int(0)
-    legal_moves = chess_lib.get_legal_moves(board, attack_table, ctypes.pointer(move_count))
+    dummy_val = ctypes.c_uint64(0)
+    legal_moves = chess_lib.get_legal_moves(board, attack_table, ctypes.pointer(move_count), ctypes.pointer(dummy_val))
 
     return legal_moves[:move_count.value], move_count.value
 
@@ -260,3 +262,10 @@ def move_exists(chess_lib, move):
     chess_lib.move_exists.restype = ctypes.c_bool
 
     return bool(chess_lib.move_exists(move))
+
+
+def test_search(chess_lib, board, attack_table):
+    chess_lib.test_search.argtypes = [ctypes.POINTER(Board), ctypes.POINTER(AttackTable)]
+    chess_lib.test_search.restype = None
+
+    chess_lib.test_search(board, attack_table)

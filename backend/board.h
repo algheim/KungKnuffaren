@@ -58,9 +58,9 @@ bool board_get_turn(Board* board);
 
 void board_set_start(Board* board);
 
-Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count);
+Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares);
 
-Move* board_get_legal_captures(Board* board, AttackTable* attack_table, int* move_count);
+Move* board_get_legal_captures(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares);
 
 void board_set_turn(bool turn, Board* board);
 

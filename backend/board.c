@@ -152,8 +152,8 @@ int board_evaluate_current(Board* board) {
     return evaluate_board(board);
 }
 
-Move board_get_best_move(Board* board, AttackTable* attack_table, TTable* t_table, int depth, SearchAlg alg) {
-    return search_best_move(board, attack_table, t_table, depth, alg);
+Move board_get_best_move(Board* board, AttackTable* attack_table, int depth, SearchAlg alg) {
+    return search_best_move(board, attack_table, depth, alg);
 }
 
 bool board_get_turn(Board* board) {
@@ -363,12 +363,12 @@ void board_set_piece(int index, PieceType new_type, Board* board) {
     }
 }
 
-Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
-    return get_legal_moves(board, attack_table, move_count);
+Move* board_get_legal_moves(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares) {
+    return get_legal_moves(board, attack_table, move_count, attacked_squares);
 }
 
-Move* board_get_legal_captures(Board* board, AttackTable* attack_table, int* move_count) {
-    return get_legal_captures(board, attack_table, move_count);
+Move* board_get_legal_captures(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares) {
+    return get_legal_captures(board, attack_table, move_count, attacked_squares);
 }
 
 void board_change_turn(Board* board) {

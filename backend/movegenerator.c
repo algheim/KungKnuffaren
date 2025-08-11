@@ -63,9 +63,9 @@ static int min(int n1, int n2);
 /* -------------------------- External functions ----------------------------*/
 
 /* This should be optimiezed later! */
-Move* get_legal_captures(Board* board, AttackTable* attack_table, int* move_count) {
+Move* get_legal_captures(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares) {
     int legal_move_count = 0;
-    Move* legal_moves = get_legal_moves(board, attack_table, &legal_move_count);
+    Move* legal_moves = get_legal_moves(board, attack_table, &legal_move_count, attacked_squares);
     Move* legal_captures = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
     uint64_t enemy_pieces = board->turn ? board->bit_boards[BLACK_PIECES] : board->bit_boards[WHITE_PIECES];
 
@@ -79,10 +79,9 @@ Move* get_legal_captures(Board* board, AttackTable* attack_table, int* move_coun
     return legal_captures;
 }
 
-Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) {
+Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares) {
     //printf("Generating legal moves for %s\n", board->turn ? "white" : "black");
     Move* legal_moves = calloc(MAX_LEGAL_MOVES + 1, sizeof(Move));
-    uint64_t attacked_squares = 0ULL;
     int king_index;
     if (board->turn) {
         king_index = __builtin_ctzll(board->bit_boards[WHITE_KING]);
@@ -97,12 +96,12 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
 
     // The king shouldn't block enemy sliding pieces, so I remove it :)
     board_set_piece(king_index, -1, board);
-    uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, &attacked_squares);
+    uint64_t king_attackers = get_king_attackers(board, king_index, attack_table, attacked_squares);
     board_set_piece(king_index, board->turn ? WHITE_KING : BLACK_KING, board);
 
     uint64_t legal_king_moves = attack_table->king_table[king_index];
     legal_king_moves &= ~friendly_pieces;
-    legal_king_moves &= ~attacked_squares;
+    legal_king_moves &= ~(*attacked_squares);
 
     // King is checked
     if (king_attackers) {
@@ -119,7 +118,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count) 
         //bit_board_print(squares_blocking_king);
     }
     else {
-        add_castle_moves(board, legal_moves, move_count, attacked_squares);
+        add_castle_moves(board, legal_moves, move_count, *attacked_squares);
     }
     uint64_t pinned_pieces = get_pinned_pieces(board, king_index, attack_table);
 

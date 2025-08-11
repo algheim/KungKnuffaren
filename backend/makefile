@@ -1,6 +1,6 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -g -Wall -std=c99
+CFLAGS = -Wall -std=c99 -O3
 CFLAGS_LIB = -shared -fPIC -std=c99 -Wall
 
 # Paths
