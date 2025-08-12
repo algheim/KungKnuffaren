@@ -35,6 +35,7 @@ static int global_eval = 0;
 static int tt_hits = 0;
 static int tt_pruning_hits = 0;
 static int tt_lookups = 0;
+static int delta_prunes = 0;
 
 // Main search
 int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Move* best_move);
@@ -59,6 +60,9 @@ void print_scored_move(ScoredMove move);
 
 #define MAX_DEPTH 50
 #define KILLER_COUNT 2
+
+// Delta = the maximum piece value + som safety margin
+#define DELTA 950
 
 Move killer_moves[MAX_DEPTH][KILLER_COUNT];
 
@@ -197,6 +201,7 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
     int bad_move_count = 0;
     int new_depth = depth - 1;
     for (int i = 0 ; i < move_count ; i++) {
+        // Late move reductioins
         if (bad_move_count >= 4 && depth >= 3) {
             new_depth= depth - 2;
         }
@@ -297,9 +302,15 @@ int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_tabl
 
     int score = board_evaluate_current(board);
     score = board->turn ? score : -score;
-    
+
     if (score >= beta) {
         return beta;
+    }
+
+    // Delta pruning
+    if (score + DELTA < alpha) {
+        delta_prunes++;
+        return alpha;
     }
 
     if (score > alpha) {
@@ -437,6 +448,7 @@ void reset_search_stats(SearchAlg alg) {
     quiescence_searched = 0;
     best_move_found = move_create(0, 0, 0);
     global_eval = 0;
+    delta_prunes = 0;
 }
 
 
@@ -461,6 +473,7 @@ void print_search_stats() {
     printf("TT lookups: \t\t%d\n", tt_lookups);
     printf("TT hits: \t\t%d (%.2f%%)\n", tt_hits, hit_rate);
     printf("TT pruning hits: \t%d (%.2f%% of hits)\n", tt_pruning_hits, pruning_hit_rate);
+    printf("Delta prunes: \t\t%d\n", delta_prunes);
 }
 
 
