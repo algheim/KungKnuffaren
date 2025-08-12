@@ -141,7 +141,7 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
     TTEntry* tt_entry = tt_lookup(params.t_table, current_hash, &tt_hits, &tt_lookups);
     TTEntryType entry_type = TT_UPPER_BOUND;
 
-    if (tt_entry && tt_entry->depth >= depth) {
+    if (tt_entry && tt_entry->depth >= depth -1 ) {
         if (tt_entry->entry_type == TT_EXACT) {
             tt_pruning_hits++;
             return tt_entry->score;
@@ -161,7 +161,7 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
 
     // Null move pruning:
     int king_index;
-    int r = 2;
+    int r = 3;
     uint64_t attacked_squares = 0ULL;
     if (params.board->turn) {
         king_index = __builtin_ctzll(params.board->bit_boards[WHITE_KING]);
@@ -194,10 +194,18 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
     // Evaluate moves in guess-order with best_move first if it exists:
     order_moves_by_guess(params.board, scored_moves, move_count, best_move);
     board_change_turn(params.board);
+    int bad_move_count = 0;
+    int new_depth = depth - 1;
     for (int i = 0 ; i < move_count ; i++) {
-        board_push_move(scored_moves[i].move, params.board);
+        if (bad_move_count >= 4 && depth >= 3) {
+            new_depth= depth - 2;
+        }
+        else {
+            new_depth = depth - 1;
+        }
 
-        int score = -alpha_beta(params, -beta, -alpha, depth -1, ply + 1, NULL);
+        board_push_move(scored_moves[i].move, params.board);
+        int score = -alpha_beta(params, -beta, -alpha, new_depth, ply + 1, NULL);
         board_pop_move(params.board);
 
         if (score >= beta) {
@@ -206,29 +214,59 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
                 *best_move = scored_moves[i].move;
             }
             if (board_get_piece(scored_moves[i].move, params.board) == -1) {
-                store_killer(depth, scored_moves[i].move);
+                store_killer(ply, scored_moves[i].move);
             }
             board_change_turn(params.board);
-            tt_store(params.t_table, current_hash, depth, score, TT_LOWER_BOUND, move_create(0, 0, 0));
+            tt_store(params.t_table, current_hash, new_depth, score, TT_LOWER_BOUND, move_create(0, 0, 0));
             return beta;
         }
 
         if (score > alpha) {
-            entry_type = TT_EXACT;
-            alpha = score;
-            if (depth == params.root_depth) {
-                *best_move = scored_moves[i].move;
+            bad_move_count = 0;
+            // If we searched at reduced depth we need to re-search at full depth
+            if (new_depth < depth - 1) {
+                board_push_move(scored_moves[i].move, params.board);
+                int full_score = -alpha_beta(params, -beta, -alpha, depth -1, ply + 1, NULL);
+                board_pop_move(params.board);
+                if (full_score >= beta) {
+                    if (depth == params.root_depth) {
+                        *best_move = scored_moves[i].move;
+                    }
+                    if (board_get_piece(scored_moves[i].move, params.board) == -1) {
+                        store_killer(ply, scored_moves[i].move);
+                    }
+                    tt_store(params.t_table, current_hash, depth - 1, full_score, TT_LOWER_BOUND, move_create(0, 0, 0));
+                    board_change_turn(params.board);
+                    return beta;
+                }
+                if (full_score > alpha) {
+                    entry_type = TT_EXACT;
+                    alpha = full_score;
+                    if (depth == params.root_depth) {
+                        *best_move = scored_moves[i].move;
+                    }
+                }
+            }
+            else {
+                entry_type = TT_EXACT;
+                alpha = score;
+                if (depth == params.root_depth) {
+                    *best_move = scored_moves[i].move;
+                }
             }
         }
+        bad_move_count++;
     }
+
+
     free(scored_moves);
     board_change_turn(params.board);
 
     if (best_move) {
-        tt_store(params.t_table, current_hash, depth, alpha, entry_type, *best_move);
+        tt_store(params.t_table, current_hash, new_depth, alpha, entry_type, *best_move);
     }
     else {
-        tt_store(params.t_table, current_hash, depth, alpha, entry_type, move_create(0, 0, 0));
+        tt_store(params.t_table, current_hash, new_depth, alpha, entry_type, move_create(0, 0, 0));
     }
 
     return alpha;
