@@ -1,6 +1,7 @@
 #include "search.h"
 #include "evaluate.h"
 #include "bitboard.h"
+#include "movegenerator.h"
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -158,8 +159,26 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
         *best_move = tt_entry->best_move;
     }
 
-    // Generate moves
+    // Null move pruning:
+    int king_index;
+    int r = 2;
     uint64_t attacked_squares = 0ULL;
+    if (params.board->turn) {
+        king_index = __builtin_ctzll(params.board->bit_boards[WHITE_KING]);
+    }
+    else {
+        king_index = __builtin_ctzll(params.board->bit_boards[BLACK_KING]);
+    }
+    if (depth >= (r + 1) && !get_king_attackers(params.board, king_index, params.attack_table, &attacked_squares)) {
+        board_change_turn(params.board);
+        int score = -alpha_beta(params, -beta, -(beta - 1), depth - 1 - r, ply + 1, NULL);
+        board_change_turn(params.board);
+        if (score >= beta) {
+            return beta;
+        }
+    }
+
+    // Generate moves
     int move_count = 0;
     Move* legal_moves = board_get_legal_moves(params.board, params.attack_table, &move_count, &attacked_squares);
     if (move_count == 0) {
@@ -385,24 +404,7 @@ void reset_search_stats(SearchAlg alg) {
 
 void print_search_stats() {
     printf("\n");
-    switch (current_algorithm)
-    {
-        case MIN_MAX:
-            printf("-------- Min-max statistics --------\n");
-            break;
-        case ALPHA_BETA:
-            printf("------- Alpha-beta statistics -------\n");
-            break;
-        case ALHPA_BETA_ORDERED:
-            printf("--- Alpha-beta ordered statistics ---\n");
-            break;
-        case ITERATIVE_DEEPENING:
-            printf("------- Iterative deepeniing --------\n");
-            break;
-        
-        default:
-            break;
-    }
+    printf("----------- Search stats -----------\n");
 
     int total_searched = positions_searched + quiescence_searched;
     printf("Positions searched: \t%d (%.2f%%)\n", positions_searched, 100.0 * positions_searched / total_searched);

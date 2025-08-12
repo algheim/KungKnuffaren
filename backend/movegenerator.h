@@ -16,5 +16,7 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count, 
 
 Move* get_legal_captures(Board* board, AttackTable* attack_table, int* move_count, uint64_t* attacked_squares);
 
+uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_table, uint64_t* all_attacks);
+
 
 #endif

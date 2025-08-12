@@ -34,7 +34,6 @@ int get_flag(PieceType piece, int from_index, int to_index);
 
 void add_castle_moves(Board* board, Move* legal_moves, int* move_count, uint64_t attacked_squares);
 uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* attack_table);
-uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_table, uint64_t* all_attacks);
 void get_moves_from_index(int from_index, uint64_t attacks, Move* moves, int* current_index, Board* board);
 void get_moves_from_bit_board(Board* board, 
                               Move* moves, 
@@ -129,6 +128,38 @@ Move* get_legal_moves(Board* board, AttackTable* attack_table, int* move_count, 
     get_moves_from_index(king_index, legal_king_moves, legal_moves, move_count, board);
 
     return legal_moves;
+}
+
+uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_table, uint64_t* all_attacks) {
+    uint64_t king_attackers = 0ULL;
+    uint64_t opponent_pieces;
+
+    if (board->turn)
+    {
+        opponent_pieces = board->bit_boards[BLACK_PIECES];
+    }
+    else
+    {
+        opponent_pieces = board->bit_boards[WHITE_PIECES];
+    }
+
+    // Change turn to get opponent attacks instead of normal attacks.
+    board_change_turn(board);
+    while (opponent_pieces)
+    {
+        int current_index = __builtin_ctzll(opponent_pieces);
+        opponent_pieces &= opponent_pieces - 1;
+
+        uint64_t current_attack_board = get_pseudo_attacks_from_index(board, current_index, attack_table);
+        (*all_attacks) = (*all_attacks) | (current_attack_board);
+
+        if (current_attack_board & 1ULL << king_index) {
+            king_attackers |= (1ULL << current_index);
+        }
+    }
+    board_change_turn(board);
+
+    return king_attackers;
 }
 
 /* -------------------------- Internal functions ----------------------------*/
@@ -359,38 +390,6 @@ int get_flag(PieceType piece, int from_index, int to_index) {
     return NORMAL_MOVE_FLAG;
 }
 
-
-uint64_t get_king_attackers(Board* board, int king_index, AttackTable* attack_table, uint64_t* all_attacks) {
-    uint64_t king_attackers = 0ULL;
-    uint64_t opponent_pieces;
-
-    if (board->turn)
-    {
-        opponent_pieces = board->bit_boards[BLACK_PIECES];
-    }
-    else
-    {
-        opponent_pieces = board->bit_boards[WHITE_PIECES];
-    }
-
-    // Change turn to get opponent attacks instead of normal attacks.
-    board_change_turn(board);
-    while (opponent_pieces)
-    {
-        int current_index = __builtin_ctzll(opponent_pieces);
-        opponent_pieces &= opponent_pieces - 1;
-
-        uint64_t current_attack_board = get_pseudo_attacks_from_index(board, current_index, attack_table);
-        (*all_attacks) = (*all_attacks) | (current_attack_board);
-
-        if (current_attack_board & 1ULL << king_index) {
-            king_attackers |= (1ULL << current_index);
-        }
-    }
-    board_change_turn(board);
-
-    return king_attackers;
-}
 
 uint64_t get_pseudo_attacks_from_index(Board* board, int index, AttackTable* attack_table) {
     PieceType piece_type = board_get_piece(index, board);
