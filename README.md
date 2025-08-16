@@ -4,7 +4,7 @@ Chess bot written in C. Frontend written in python using pygame. Far from done.
 
 Inspired by Sebastian Lague: https://www.youtube.com/watch?v=U4ogK0MIzqk
 
-## Feautres
+## Features
 - Movegeneration using bitboards and precomputed attack tables.
 - alpha beta pruning with move ordering.
 - Quiescence search using delta pruning.

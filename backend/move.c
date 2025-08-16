@@ -9,6 +9,7 @@ MoveFlag move_get_flag(Move move) {
 }
 
 int move_get_from_index(Move move) {
+    // typecast??
     return (MoveFlag) (move >> 6 & 0x3F);
 }
 
@@ -22,6 +23,11 @@ Move move_create(int from_index, int to_index, int flag) {
 
 bool move_exists(Move move) {
     return move_get_from_index(move) != move_get_to_index(move); 
+}
+
+bool move_comp_from_to(Move m1, Move m2) {
+    return move_get_from_index(m1) == move_get_from_index(m2) &&
+           move_get_to_index(m1) == move_get_to_index(m2);
 }
 
 void move_print(Move move) {

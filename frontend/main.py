@@ -39,7 +39,7 @@ def main():
             fen = wrappers.board_get_fen_w(chess_lib, board)
             legal_moves, _ = wrappers.get_legal_moves_w(chess_lib, board, attack_table)
             gui.update_board(board, legal_moves)
-            print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
+            #print("No depth eval: ", wrappers.board_evaluate_current(chess_lib, board))
 
             if not board.contents.turn:
                 make_enemy_move(chess_lib, board, attack_table)

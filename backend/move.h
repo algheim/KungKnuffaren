@@ -39,6 +39,8 @@ Move move_create(int from_index, int to_index, int flag);
 
 bool move_exists(Move move);
 
+bool move_comp_from_to(Move m1, Move m2);
+
 void move_print(Move move);
 
 #endif

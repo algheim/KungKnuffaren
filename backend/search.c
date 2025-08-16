@@ -32,6 +32,7 @@ static double elapsed_time = -1;
 static Move best_move_found = -1;
 static SearchAlg current_algorithm = -1;
 static int global_eval = 0;
+static int global_static_eval = 0;
 static int tt_hits = 0;
 static int tt_pruning_hits = 0;
 static int tt_lookups = 0;
@@ -41,7 +42,6 @@ static int delta_prunes = 0;
 int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Move* best_move);
 int search_captures_only(Board* board, AttackTable* attack_table, TTable* t_table, int alpha, int beta, int depth);
 Move iterative_deepening(Board* board, AttackTable* attack_table, int depth);
-int search_with_tt(SearchParams params, int original_alpha, int original_beta);
 
 // Move ordering
 ScoredMove* get_scored_moves(Board* board, Move* moves, int move_count, int depth);
@@ -56,7 +56,10 @@ bool move_is_killer(int ply, Move move);
 // Search stats
 void reset_search_stats(SearchAlg alg);
 void print_search_stats();
+
+// Debugging
 void print_scored_move(ScoredMove move);
+bool check_if_legal(Move move, ScoredMove* legal_moves, int move_count);
 
 #define MAX_DEPTH 50
 #define KILLER_COUNT 2
@@ -94,7 +97,11 @@ Move search_best_move(Board* board, AttackTable* attack_table, int depth, Search
     best_move_found = best_move;
     //global_eval = board->turn ? score : -score;
 
-    print_search_stats();
+    board_push_move(best_move_found, board);
+    int static_eval = evaluate_board(board);
+    board_pop_move(board);
+    global_static_eval = board->turn ? -static_eval : static_eval;
+    //print_search_stats();
     free(scored_moves);
 
     return best_move_found;
@@ -202,7 +209,7 @@ int alpha_beta(SearchParams params, int alpha, int beta, int depth, int ply, Mov
     int new_depth = depth - 1;
     for (int i = 0 ; i < move_count ; i++) {
         // Late move reductioins
-        if (bad_move_count >= 4 && depth >= 3) {
+        if (bad_move_count >= 3 && depth >= 3) {
             new_depth= depth - 2;
         }
         else {
@@ -448,6 +455,7 @@ void reset_search_stats(SearchAlg alg) {
     quiescence_searched = 0;
     best_move_found = move_create(0, 0, 0);
     global_eval = 0;
+    global_static_eval = 0;
     delta_prunes = 0;
 }
 
@@ -462,7 +470,7 @@ void print_search_stats() {
     printf("Total searched: \t%d\n", total_searched);
 
     printf("Time: \t\t\t%.3f\n", elapsed_time);
-    printf("Positions/s: \t\t%.f\n", positions_searched / elapsed_time);
+    printf("Nodes/s: \t\t%.f\n", total_searched / elapsed_time);
 
     printf("Eval: \t\t\t%.3f\n", global_eval / 100.0);
     printf("Best move from->to: \t%d->%d\n", move_get_from_index(best_move_found), move_get_to_index(best_move_found));
@@ -474,6 +482,7 @@ void print_search_stats() {
     printf("TT hits: \t\t%d (%.2f%%)\n", tt_hits, hit_rate);
     printf("TT pruning hits: \t%d (%.2f%% of hits)\n", tt_pruning_hits, pruning_hit_rate);
     printf("Delta prunes: \t\t%d\n", delta_prunes);
+    printf("Static eval post move: \t%.3f\n", global_static_eval / 100.0);
 }
 
 
@@ -491,4 +500,15 @@ void test_search(Board* board, AttackTable* attack_table) {
     for (int i = 0 ; i < move_count ; i++) {
         print_scored_move(scored_moves[i]);
     }
+}
+
+
+bool check_if_legal(Move move, ScoredMove* legal_moves, int move_count) {
+    for (int i = 0 ; i < move_count ; i++) {
+        if (move == legal_moves[i].move) {
+            return true;
+        }
+    }
+
+    return false;
 }

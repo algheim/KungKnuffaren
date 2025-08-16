@@ -4,6 +4,7 @@ shared_lib/
 venv/
 
 .DS_Store
+*.log
 
 test.c
 old.txt

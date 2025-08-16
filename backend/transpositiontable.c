@@ -17,6 +17,7 @@ TTable* tt_create(int size_MB) {
 
     for (int i = 0 ; i < t_table->capacity ; i++) {
         t_table->data[i].is_active = false;
+        t_table->data[i].best_move = move_create(0, 0, 0);
     }
 
     return t_table;
@@ -25,11 +26,11 @@ TTable* tt_create(int size_MB) {
 void tt_store(TTable* t_table, uint64_t zobrist_key, int depth, int score, TTEntryType type, Move best_move) {
     // For some reason this is the same as zobrist_key % capacity :o
     int index = zobrist_key & (t_table->capacity - 1);
-
+    
     if (t_table->data[index].is_active && t_table->data[index].depth > depth) {
         return;
     }
-    
+
     TTEntry new_entry = (TTEntry) {
         .zobrist_key = zobrist_key,
         .entry_type = type,
