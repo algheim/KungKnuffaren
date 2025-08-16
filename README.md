@@ -1,6 +1,6 @@
 # Kungknuffaren
 
-Chess bot written in C. Frontend written in python using pygame. Far from done.
+UCI Chess bot written in C. Frontend written in python using pygame.
 
 Inspired by Sebastian Lague: https://www.youtube.com/watch?v=U4ogK0MIzqk
 
